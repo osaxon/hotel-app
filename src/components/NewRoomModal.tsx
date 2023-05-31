@@ -34,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { api } from "@/utils/api";
 
 const FormSchema = z.object({
   roomNumber: z.string().min(1, {
@@ -51,16 +52,36 @@ export default function NewRoomModal() {
     resolver: zodResolver(FormSchema),
   });
 
+  const { data: types, isLoading: isLoadingTypes } =
+    api.rooms.getRoomTypes.useQuery();
+
+  const { mutate: addRoom } = api.rooms.createRoom.useMutation({
+    onSuccess: (data) => {
+      toast({
+        title: "You submitted the following values:",
+        description: (
+          <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+            <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+          </pre>
+        ),
+      });
+    },
+  });
+
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    toast({
-      title: "You submitted the following values:",
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
+    addRoom({ ...data });
+    // toast({
+    //   title: "You submitted the following values:",
+    //   description: (
+    //     <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+    //       <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+    //     </pre>
+    //   ),
+    // });
   }
+
+  if (isLoadingTypes) return <>Loading...</>;
+
   return (
     <AlertDialog>
       <AlertDialogTrigger>
@@ -115,9 +136,12 @@ export default function NewRoomModal() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="standard">Standard</SelectItem>
-                      <SelectItem value="deluxe">Deluxe</SelectItem>
-                      <SelectItem value="superior">Superior</SelectItem>
+                      {types &&
+                        types.map((type) => (
+                          <SelectItem key={type.id} value={type.id}>
+                            {type.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <FormDescription>

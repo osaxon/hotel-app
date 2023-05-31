@@ -9,7 +9,7 @@ import {
   privateProcedure,
 } from "@/server/api/trpc";
 
-import type { Reservation, Room } from "@prisma/client";
+import type { Reservation, Room, RoomType } from "@prisma/client";
 
 // Create a new ratelimiter, that allows 3 requests per 1 min
 // const ratelimit = new Ratelimit({
@@ -27,8 +27,12 @@ export const roomsRouter = createTRPCRouter({
         reservations: true,
       },
     });
-    console.log(rooms.length);
     return rooms;
+  }),
+
+  getRoomTypes: publicProcedure.query(async ({ ctx }) => {
+    const types = await ctx.prisma.roomType.findMany();
+    return types;
   }),
 
   // create new room
@@ -38,7 +42,7 @@ export const roomsRouter = createTRPCRouter({
         roomNumber: z.string(),
         roomName: z.string(),
         roomType: z.string(),
-        capcity: z.number(),
+        capacity: z.number(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -48,7 +52,9 @@ export const roomsRouter = createTRPCRouter({
       const room = await ctx.prisma.room.create({
         data: {
           roomNumber: input.roomNumber,
-          capacity: 2,
+          capacity: input.capacity,
+          roomName: input.roomName,
+          roomTypeId: input.roomType,
         },
       });
 

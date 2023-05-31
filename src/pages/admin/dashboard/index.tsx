@@ -192,6 +192,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   }
 
   await ssg.rooms.getAll.prefetch();
+  await ssg.rooms.getRoomTypes.prefetch();
   await ssg.reservations.getAll.prefetch();
 
   // Fetch your admin data here
