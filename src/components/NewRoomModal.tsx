@@ -34,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useState } from "react";
 import { api } from "@/utils/api";
 
 const FormSchema = z.object({
@@ -43,7 +44,7 @@ const FormSchema = z.object({
   roomName: z.string().min(3, {
     message: "Name must be at least 3 characters long.",
   }),
-  roomType: z.string(),
+  roomTypeId: z.string(),
   capacity: z.coerce.number().min(1),
 });
 
@@ -51,12 +52,14 @@ export default function NewRoomModal() {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
   });
+  const [modalOpen, setModalOpen] = useState(false);
 
   const { data: types, isLoading: isLoadingTypes } =
-    api.rooms.getRoomTypes.useQuery();
+    api.rooms.getRoomTypes.useQuery(undefined, { retry: false });
 
   const { mutate: addRoom } = api.rooms.createRoom.useMutation({
     onSuccess: (data) => {
+      setModalOpen(false);
       toast({
         title: "You submitted the following values:",
         description: (
@@ -66,18 +69,35 @@ export default function NewRoomModal() {
         ),
       });
     },
+    onMutate: (variables) => {
+      setModalOpen(false);
+      toast({
+        title: "You submitted the following values:",
+        description: (
+          <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+            <code className="text-white">
+              {JSON.stringify(variables, null, 2)}
+            </code>
+          </pre>
+        ),
+      });
+    },
+    onError: (error) => {
+      setModalOpen(false);
+      toast({
+        title: "There's been an error:",
+        description: (
+          <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
+            <code className="text-white">{JSON.stringify(error, null, 2)}</code>
+          </pre>
+        ),
+      });
+    },
   });
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
+    console.log({ ...data });
     addRoom({ ...data });
-    // toast({
-    //   title: "You submitted the following values:",
-    //   description: (
-    //     <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-    //       <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-    //     </pre>
-    //   ),
-    // });
   }
 
   if (isLoadingTypes) return <>Loading...</>;
@@ -85,7 +105,7 @@ export default function NewRoomModal() {
   return (
     <AlertDialog>
       <AlertDialogTrigger>
-        <PlusCircle />
+        <PlusCircle size={56} className="hover:opacity-60" />
       </AlertDialogTrigger>
       <AlertDialogContent>
         {/* form area */}
@@ -122,7 +142,7 @@ export default function NewRoomModal() {
             />
             <FormField
               control={form.control}
-              name="roomType"
+              name="roomTypeId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Room Type</FormLabel>

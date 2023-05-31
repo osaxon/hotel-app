@@ -45,7 +45,6 @@ const addUserDataToReservation = async (reservations: Reservation[]) => {
 };
 
 export const reservationsRouter = createTRPCRouter({
-  // get all posts for feed
   getAll: publicProcedure.query(async ({ ctx }) => {
     const reservations = await ctx.prisma.reservation.findMany({
       take: 100,

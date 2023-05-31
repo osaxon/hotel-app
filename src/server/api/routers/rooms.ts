@@ -22,11 +22,13 @@ export const roomsRouter = createTRPCRouter({
   // get all posts for feed
   getAll: publicProcedure.query(async ({ ctx }) => {
     const rooms = await ctx.prisma.room.findMany({
-      take: 100,
       include: {
         reservations: true,
+        roomType: true,
       },
     });
+    if (!rooms) throw new TRPCError({ code: "NOT_FOUND" });
+    console.log(rooms);
     return rooms;
   }),
 
@@ -41,23 +43,22 @@ export const roomsRouter = createTRPCRouter({
       z.object({
         roomNumber: z.string(),
         roomName: z.string(),
-        roomType: z.string(),
+        roomTypeId: z.string(),
         capacity: z.number(),
       })
     )
     .mutation(async ({ ctx, input }) => {
       //   const { success } = await ratelimit.limit("test");
       //   if (!success) throw new TRPCError({ code: "TOO_MANY_REQUESTS" });
-
+      console.log({ ...input });
       const room = await ctx.prisma.room.create({
         data: {
           roomNumber: input.roomNumber,
-          capacity: input.capacity,
           roomName: input.roomName,
-          roomTypeId: input.roomType,
+          roomTypeId: input.roomTypeId,
+          capacity: input.capacity,
         },
       });
-
       return room;
     }),
 });

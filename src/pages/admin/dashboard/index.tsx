@@ -7,9 +7,12 @@ import { api } from "@/utils/api";
 import { generateSSGHelper } from "@/server/helpers/ssgHelper";
 import Room from "@/components/Room";
 import Image from "next/image";
+import { useRouter } from "next/router";
 import { Activity, CreditCard, BedDouble, Users, Plus } from "lucide-react";
 import LoadingSpinner from "@/components/loading";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -26,11 +29,25 @@ import { UserNav } from "@/components/UserNav";
 import NewRoomModal from "@/components/NewRoomModal";
 
 export default function DashboardPage() {
-  const { data: rooms, isLoading: isLoadingRooms } =
-    api.rooms.getAll.useQuery();
+  const router = useRouter();
+  const {
+    data: rooms,
+    isLoading: isLoadingRooms,
+    isError: isRoomsError,
+  } = api.rooms.getAll.useQuery();
 
-  const { data: reservations, isLoading: isLoadingReservations } =
-    api.reservations.getAll.useQuery();
+  //   const {
+  //     data: reservations,
+  //     isLoading: isLoadingReservations,
+  //     isError: isReservationsError,
+  //   } = api.reservations.getAll.useQuery();
+
+  if (!router.isReady) {
+    return null;
+  }
+  const tab = router.asPath.split("#")[1] || "overview";
+
+  if (isRoomsError) return <>Theres been an error</>;
 
   return (
     <>
@@ -50,7 +67,7 @@ export default function DashboardPage() {
               <CalendarDateRangePicker />
             </div>
           </div>
-          <Tabs defaultValue="overview" className="space-y-4">
+          <Tabs defaultValue={tab} className="space-y-4">
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="reservations">Reservations</TabsTrigger>
@@ -86,7 +103,7 @@ export default function DashboardPage() {
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <Link
+                    {/* <Link
                       href="/admin/dashboard/bookings"
                       className="text-2xl font-bold"
                     >
@@ -95,7 +112,7 @@ export default function DashboardPage() {
                       ) : (
                         reservations?.length
                       )}
-                    </Link>
+                    </Link> */}
                   </CardContent>
                 </Card>
                 <Card>
@@ -153,18 +170,33 @@ export default function DashboardPage() {
                   rooms.map((room) => (
                     <Card key={room.id}>
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          Room {room.roomNumber}
+                        <CardTitle className="flex flex-col">
+                          <span className="text-2xl">{room.roomName}</span>
                         </CardTitle>
-                        <CardContent>
-                          <div className="text-3xl">{room.capacity}</div>
-                        </CardContent>
-                        <BedDouble className="h-4 w-4 text-muted-foreground" />
+
+                        <CardDescription>
+                          <Badge>{room.roomType.name}</Badge>
+                        </CardDescription>
                       </CardHeader>
+                      <CardContent className="flex flex-col gap-y-4">
+                        <span className="text-sm font-medium text-muted-foreground">
+                          Room {room.roomNumber}
+                        </span>
+                        <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                          <BedDouble size={18} />
+                          {room.capacity}
+                        </span>
+                      </CardContent>
                     </Card>
                   ))}
-                <Card className="border-2 border-dashed">
-                  <CardContent className="flex h-full flex-col place-items-center">
+                {isLoadingRooms && (
+                  <Card className="border border-dashed">
+                    <LoadingSpinner />
+                  </Card>
+                )}
+
+                <Card className="border border-dashed">
+                  <CardContent className="flex h-full flex-col items-center justify-center p-0 py-10">
                     <NewRoomModal />
                   </CardContent>
                 </Card>
@@ -177,7 +209,6 @@ export default function DashboardPage() {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/require-await
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const session = getAuth(ctx.req);
   const ssg = generateSSGHelper();
@@ -193,10 +224,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   await ssg.rooms.getAll.prefetch();
   await ssg.rooms.getRoomTypes.prefetch();
-  await ssg.reservations.getAll.prefetch();
-
-  // Fetch your admin data here
-  console.log(session);
+  //   await ssg.reservations.getAll.prefetch();
 
   return {
     props: {
