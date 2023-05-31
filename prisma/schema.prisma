@@ -15,19 +15,36 @@ datasource db {
 model Room {
     id           String        @id @default(cuid())
     roomNumber   String        @unique
+    roomName     String?
+    roomType     RoomType      @relation(fields: [roomTypeId], references: [id])
+    roomTypeId   String        @unique
     capacity     Int
     reservations Reservation[]
+
+    @@index([roomTypeId])
 }
 
 model Reservation {
     id        String   @id @default(cuid())
     userId    String
     room      Room     @relation(fields: [roomId], references: [id])
-    roomId    String
+    roomId    String   @unique
     checkIn   DateTime
     checkOut  DateTime
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
     @@index([roomId])
+}
+
+model RoomType {
+    id    String @id @default(cuid())
+    name  String
+    rooms Room[]
+}
+
+model Task {
+    id          String @id @default(cuid())
+    shortDesc   String
+    description String
 }

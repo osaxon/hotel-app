@@ -7,7 +7,7 @@ import { api } from "@/utils/api";
 import { generateSSGHelper } from "@/server/helpers/ssgHelper";
 import Room from "@/components/Room";
 import Image from "next/image";
-import { Activity, CreditCard, BedDouble, Users } from "lucide-react";
+import { Activity, CreditCard, BedDouble, Users, Plus } from "lucide-react";
 import LoadingSpinner from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,9 +22,8 @@ import { CalendarDateRangePicker } from "@/components/ui/date-range-picker";
 import { MainNav } from "@/components/MainNav";
 import { Overview } from "@/components/Overview";
 import { RecentSales } from "@/components/RecentSales";
-import { Search } from "@/components/Search";
-import TeamSwitcher from "@/components/TeamSwitcher";
 import { UserNav } from "@/components/UserNav";
+import NewRoomModal from "@/components/NewRoomModal";
 
 export default function DashboardPage() {
   const { data: rooms, isLoading: isLoadingRooms } =
@@ -142,9 +141,7 @@ export default function DashboardPage() {
                       You made 265 sales this month.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <RecentSales />
-                  </CardContent>
+                  <CardContent></CardContent>
                 </Card>
               </div>
             </TabsContent>
@@ -166,13 +163,10 @@ export default function DashboardPage() {
                       </CardHeader>
                     </Card>
                   ))}
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      Add new room
-                    </CardTitle>
-                    <BedDouble className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
+                <Card className="border-2 border-dashed">
+                  <CardContent className="flex h-full flex-col place-items-center">
+                    <NewRoomModal />
+                  </CardContent>
                 </Card>
               </div>
             </TabsContent>
@@ -188,9 +182,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const session = getAuth(ctx.req);
   const ssg = generateSSGHelper();
 
-  await ssg.rooms.getAll.prefetch();
-  await ssg.reservations.getAll.prefetch();
-
   if (!session) {
     return {
       redirect: {
@@ -199,6 +190,9 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       },
     };
   }
+
+  await ssg.rooms.getAll.prefetch();
+  await ssg.reservations.getAll.prefetch();
 
   // Fetch your admin data here
   console.log(session);

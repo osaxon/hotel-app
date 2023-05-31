@@ -32,10 +32,13 @@ export const roomsRouter = createTRPCRouter({
   }),
 
   // create new room
-  createRoom: privateProcedure
+  createRoom: publicProcedure
     .input(
       z.object({
-        roomNumber: z.number(),
+        roomNumber: z.string(),
+        roomName: z.string(),
+        roomType: z.string(),
+        capcity: z.number(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -44,7 +47,7 @@ export const roomsRouter = createTRPCRouter({
 
       const room = await ctx.prisma.room.create({
         data: {
-          roomNumber: "2",
+          roomNumber: input.roomNumber,
           capacity: 2,
         },
       });

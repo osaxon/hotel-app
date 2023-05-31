@@ -54,7 +54,7 @@ export const reservationsRouter = createTRPCRouter({
     return reservations;
   }),
 
-  getRoomReservations: privateProcedure
+  getRoomReservations: publicProcedure
     .input(z.object({ roomId: z.string() }))
     .query(async ({ ctx, input }) => {
       const reservations = await ctx.prisma.reservation.findMany({
