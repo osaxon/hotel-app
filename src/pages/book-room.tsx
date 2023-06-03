@@ -64,6 +64,9 @@ const Home: NextPage = () => {
                     <BedDouble size={18} />
                     {room.capacity}
                   </span>
+                  <span>
+                    {room.isAvailable ? "Available" : "Not available"}
+                  </span>
                 </CardContent>
               </Card>
             ))}

@@ -69,7 +69,6 @@ export function CalendarDateRangePicker({
           />
         </PopoverContent>
       </Popover>
-      {selectedDate && JSON.stringify(selectedDate)}
     </div>
   );
 }

@@ -41,25 +41,42 @@ export const roomsRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       // query database for available rooms
+      // const rooms = await ctx.prisma.room.findMany({
+      //     include: {
+      //       roomType: true,
+      //       reservations: true,
+      //     },
+      //     where: {
+      //       reservations: {
+      //         none: {
+      //           OR: [
+      //             {
+      //               checkIn: { lte: input.endDate },
+      //               checkOut: { gte: input.startDate },
+      //             },
+      //           ],
+      //         },
+      //       },
+      //     },
+      //   });
       const rooms = await ctx.prisma.room.findMany({
         include: {
           roomType: true,
-          reservations: true,
-        },
-        where: {
           reservations: {
-            none: {
-              OR: [
-                {
-                  checkIn: { lte: input.endDate },
-                  checkOut: { gte: input.startDate },
-                },
-              ],
+            where: {
+              checkIn: { lte: input.endDate },
+              checkOut: { gte: input.startDate },
             },
           },
         },
       });
-      return rooms;
+
+      const availableRooms = rooms.map((room) => ({
+        ...room,
+        isAvailable: room.reservations.length === 0,
+      }));
+
+      return availableRooms;
     }),
 
   getRoomTypes: publicProcedure.query(async ({ ctx }) => {
