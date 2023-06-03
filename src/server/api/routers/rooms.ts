@@ -33,7 +33,12 @@ export const roomsRouter = createTRPCRouter({
   }),
 
   getAvailable: publicProcedure
-    .input(z.object({ startDate: z.date(), endDate: z.date() }))
+    .input(
+      z.object({
+        startDate: z.date(),
+        endDate: z.date(),
+      })
+    )
     .query(async ({ ctx, input }) => {
       // query database for available rooms
       const rooms = await ctx.prisma.room.findMany({
