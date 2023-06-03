@@ -51,28 +51,8 @@ export const roomsRouter = createTRPCRouter({
             none: {
               OR: [
                 {
-                  checkIn: {
-                    lte: input.startDate,
-                  },
-                  checkOut: {
-                    gte: input.startDate,
-                  },
-                },
-                {
-                  checkIn: {
-                    lte: input.endDate,
-                  },
-                  checkOut: {
-                    gte: input.endDate,
-                  },
-                },
-                {
-                  checkIn: {
-                    lte: input.startDate,
-                  },
-                  checkOut: {
-                    gte: input.endDate,
-                  },
+                  checkIn: { lte: input.endDate },
+                  checkOut: { gte: input.startDate },
                 },
               ],
             },
