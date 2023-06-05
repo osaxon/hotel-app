@@ -15,6 +15,10 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BedDouble } from "lucide-react";
+import { UploadButton, UploadDropzone } from "@uploadthing/react";
+import type { OurFileRouter } from "@/server/uploadthing";
+// You need to import our styles for the button to look right. Best to import in the root /_app.tsx but this is fine
+import "@uploadthing/react/styles.css";
 
 const Home: NextPage = () => {
   const selectedDate = useStore((state) => state.selectedDate);
@@ -70,6 +74,18 @@ const Home: NextPage = () => {
                 </CardContent>
               </Card>
             ))}
+          <UploadDropzone<OurFileRouter>
+            endpoint="uploadImage"
+            onClientUploadComplete={(res) => {
+              // Do something with the response
+              console.log("Files: ", res);
+              alert("Upload Completed");
+            }}
+            onUploadError={(error: Error) => {
+              alert(`ERROR! ${error.message}`);
+              console.error(error);
+            }}
+          />
         </div>
       </main>
     </>

@@ -16,12 +16,23 @@ model Room {
     id           String        @id @default(cuid())
     roomNumber   String        @unique
     roomName     String?
-    roomType     RoomType      @relation(fields: [roomTypeId], references: [id])
     roomTypeId   String
+    roomType     RoomType      @relation(fields: [roomTypeId], references: [id])
     capacity     Int
     reservations Reservation[]
+    images       RoomImage[] // Array to store fileUrl and fileKey
 
     @@index([roomTypeId])
+}
+
+model RoomImage {
+    id      String @id @default(cuid())
+    fileUrl String
+    fileKey String
+    roomId  String
+    room    Room   @relation(fields: [roomId], references: [id])
+
+    @@index([roomId])
 }
 
 model Reservation {

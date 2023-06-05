@@ -1,12 +1,8 @@
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { PlusCircle } from "lucide-react";
@@ -14,7 +10,6 @@ import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
@@ -36,6 +31,10 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { api } from "@/utils/api";
+import { OurUploadDropzone } from "./UploadDropzone";
+import { Switch } from "@/components/ui/switch";
+import { UploadThing } from "@/components/UploadThing";
+import { useStore } from "@/store/appStore";
 
 const FormSchema = z.object({
   roomNumber: z.string().min(1, {
@@ -53,6 +52,8 @@ export default function NewRoomModal() {
     resolver: zodResolver(FormSchema),
   });
   const [modalOpen, setModalOpen] = useState(false);
+  const uploadedImgs = useStore((state) => state.uploadedImgs);
+  const setUploadedImgs = useStore((state) => state.setUploadedImgs);
 
   const { data: types, isLoading: isLoadingTypes } =
     api.rooms.getRoomTypes.useQuery(undefined, { retry: false });
@@ -68,6 +69,7 @@ export default function NewRoomModal() {
           </pre>
         ),
       });
+      setUploadedImgs([]);
     },
     onMutate: (variables) => {
       setModalOpen(false);
@@ -96,8 +98,8 @@ export default function NewRoomModal() {
   });
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    console.log({ ...data });
-    addRoom({ ...data });
+    console.log({ ...data, images: uploadedImgs });
+    addRoom({ ...data, images: uploadedImgs });
   }
 
   if (isLoadingTypes) return <>Loading...</>;
@@ -185,8 +187,13 @@ export default function NewRoomModal() {
                 </FormItem>
               )}
             />
+            {JSON.stringify(uploadedImgs)}
+            <div className="flex">
+              <OurUploadDropzone />
+            </div>
           </form>
         </Form>
+
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <Button type="submit" onClick={form.handleSubmit(onSubmit)}>

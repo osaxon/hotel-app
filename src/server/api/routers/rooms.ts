@@ -25,6 +25,7 @@ export const roomsRouter = createTRPCRouter({
       include: {
         reservations: true,
         roomType: true,
+        images: true,
       },
     });
     if (!rooms) throw new TRPCError({ code: "NOT_FOUND" });
@@ -40,25 +41,6 @@ export const roomsRouter = createTRPCRouter({
       })
     )
     .query(async ({ ctx, input }) => {
-      // query database for available rooms
-      // const rooms = await ctx.prisma.room.findMany({
-      //     include: {
-      //       roomType: true,
-      //       reservations: true,
-      //     },
-      //     where: {
-      //       reservations: {
-      //         none: {
-      //           OR: [
-      //             {
-      //               checkIn: { lte: input.endDate },
-      //               checkOut: { gte: input.startDate },
-      //             },
-      //           ],
-      //         },
-      //       },
-      //     },
-      //   });
       const rooms = await ctx.prisma.room.findMany({
         include: {
           roomType: true,
@@ -92,18 +74,30 @@ export const roomsRouter = createTRPCRouter({
         roomName: z.string(),
         roomTypeId: z.string(),
         capacity: z.number(),
+        images: z.array(
+          z.object({
+            fileUrl: z.string(),
+            fileKey: z.string(),
+          })
+        ),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      //   const { success } = await ratelimit.limit("test");
-      //   if (!success) throw new TRPCError({ code: "TOO_MANY_REQUESTS" });
-      console.log({ ...input });
       const room = await ctx.prisma.room.create({
         data: {
           roomNumber: input.roomNumber,
           roomName: input.roomName,
-          roomTypeId: input.roomTypeId,
           capacity: input.capacity,
+          roomType: {
+            connect: {
+              id: input.roomTypeId,
+            },
+          },
+          images: {
+            createMany: {
+              data: input.images,
+            },
+          },
         },
       });
       return room;

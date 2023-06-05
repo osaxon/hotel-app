@@ -186,6 +186,15 @@ export default function DashboardPage() {
                           <BedDouble size={18} />
                           {room.capacity}
                         </span>
+                        {room.images.length > 0 && (
+                          <Image
+                            width={200}
+                            height={200}
+                            alt="room img"
+                            src={room.images[0]?.fileUrl ?? ""}
+                            className="w-full rounded object-cover"
+                          />
+                        )}
                       </CardContent>
                     </Card>
                   ))}
