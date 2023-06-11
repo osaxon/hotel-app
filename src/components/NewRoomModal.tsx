@@ -31,10 +31,9 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { api } from "@/utils/api";
-import { OurUploadDropzone } from "./UploadDropzone";
-import { Switch } from "@/components/ui/switch";
-import { UploadThing } from "@/components/UploadThing";
+import { CldUploadButton, CldUploadWidget } from "next-cloudinary";
 import { useStore } from "@/store/appStore";
+import LoadingSpinner from "./loading";
 
 const FormSchema = z.object({
   roomNumber: z.string().min(1, {
@@ -45,6 +44,7 @@ const FormSchema = z.object({
   }),
   roomTypeId: z.string(),
   capacity: z.coerce.number().min(1),
+  image: z.any(),
 });
 
 export default function NewRoomModal() {
@@ -98,11 +98,28 @@ export default function NewRoomModal() {
   });
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    console.log({ ...data, images: uploadedImgs });
-    addRoom({ ...data, images: uploadedImgs });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const { image, ...rest } = data;
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    // addRoom({ ...data, image: image[0] });
+
+    toast({
+      title: "The data:",
+      description: (
+        <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
+          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+        </pre>
+      ),
+    });
   }
 
-  if (isLoadingTypes) return <>Loading...</>;
+  if (isLoadingTypes)
+    return (
+      <>
+        <LoadingSpinner />
+      </>
+    );
 
   return (
     <AlertDialog>
@@ -187,12 +204,12 @@ export default function NewRoomModal() {
                 </FormItem>
               )}
             />
-            {JSON.stringify(uploadedImgs)}
-            <div className="flex">
-              <OurUploadDropzone />
-            </div>
           </form>
         </Form>
+
+        <CldUploadButton uploadPreset="<Upload Preset>">
+          Upload to Cloudinary
+        </CldUploadButton>
 
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>

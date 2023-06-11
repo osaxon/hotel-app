@@ -1,18 +1,11 @@
-import { type NextPage } from "next";
 import { type GetServerSideProps } from "next";
-import { LoadingPage } from "@/components/loading";
 import { getAuth, buildClerkProps } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { api } from "@/utils/api";
 import { generateSSGHelper } from "@/server/helpers/ssgHelper";
-import Room from "@/components/Room";
-import Image from "next/image";
-import { useRouter } from "next/router";
 import { Activity, CreditCard, BedDouble, Users, Plus } from "lucide-react";
 import LoadingSpinner from "@/components/loading";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -24,42 +17,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarDateRangePicker } from "@/components/ui/date-range-picker";
 import { MainNav } from "@/components/MainNav";
 import { Overview } from "@/components/Overview";
-import { RecentSales } from "@/components/RecentSales";
 import { UserNav } from "@/components/UserNav";
 import NewRoomModal from "@/components/NewRoomModal";
+import AdminLayout from "@/components/LayoutAdmin";
 
 export default function DashboardPage() {
-  const router = useRouter();
   const {
     data: rooms,
     isLoading: isLoadingRooms,
     isError: isRoomsError,
   } = api.rooms.getAll.useQuery();
 
-  //   const {
-  //     data: reservations,
-  //     isLoading: isLoadingReservations,
-  //     isError: isReservationsError,
-  //   } = api.reservations.getAll.useQuery();
-
-  if (!router.isReady) {
-    return null;
-  }
-  const tab = router.asPath.split("#")[1] || "overview";
-
   if (isRoomsError) return <>Theres been an error</>;
 
   return (
     <>
-      <div className="flex-col">
-        <div className="border-b">
-          <div className="flex h-16 items-center px-4">
-            <MainNav className="mx-6" />
-            <div className="ml-auto flex items-center space-x-4">
-              <UserNav />
-            </div>
-          </div>
-        </div>
+      <AdminLayout>
         <div className="flex-1 space-y-4 p-8 pt-6">
           <div className="flex items-center justify-between space-y-2">
             <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
@@ -67,7 +40,7 @@ export default function DashboardPage() {
               <CalendarDateRangePicker />
             </div>
           </div>
-          <Tabs defaultValue={tab} className="space-y-4">
+          <Tabs defaultValue={"overview"} className="space-y-4">
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="reservations">Reservations</TabsTrigger>
@@ -168,35 +141,28 @@ export default function DashboardPage() {
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {rooms &&
                   rooms.map((room) => (
-                    <Card key={room.id}>
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="flex flex-col">
-                          <span className="text-2xl">{room.roomName}</span>
-                        </CardTitle>
+                    <Link key={room.id} href={`/admin/room/${room.id}`}>
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="flex flex-col">
+                            <span className="text-2xl">{room.roomName}</span>
+                          </CardTitle>
 
-                        <CardDescription>
-                          <Badge>{room.roomType.name}</Badge>
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="flex flex-col gap-y-4">
-                        <span className="text-sm font-medium text-muted-foreground">
-                          Room {room.roomNumber}
-                        </span>
-                        <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                          <BedDouble size={18} />
-                          {room.capacity}
-                        </span>
-                        {room.images.length > 0 && (
-                          <Image
-                            width={200}
-                            height={200}
-                            alt="room img"
-                            src={room.images[0]?.fileUrl ?? ""}
-                            className="w-full rounded object-cover"
-                          />
-                        )}
-                      </CardContent>
-                    </Card>
+                          <CardDescription>
+                            <Badge>{room.roomType.name}</Badge>
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-y-4">
+                          <span className="text-sm font-medium text-muted-foreground">
+                            Room {room.roomNumber}
+                          </span>
+                          <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                            <BedDouble size={18} />
+                            {room.capacity}
+                          </span>
+                        </CardContent>
+                      </Card>
+                    </Link>
                   ))}
                 {isLoadingRooms && (
                   <Card className="border border-dashed">
@@ -213,7 +179,7 @@ export default function DashboardPage() {
             </TabsContent>
           </Tabs>
         </div>
-      </div>
+      </AdminLayout>
     </>
   );
 }

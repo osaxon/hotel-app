@@ -13,37 +13,49 @@ datasource db {
 }
 
 model Room {
-    id           String        @id @default(cuid())
-    roomNumber   String        @unique
+    id           String              @id @default(cuid())
+    roomNumber   String              @unique
     roomName     String?
     roomTypeId   String
-    roomType     RoomType      @relation(fields: [roomTypeId], references: [id])
+    roomType     RoomType            @relation(fields: [roomTypeId], references: [id])
     capacity     Int
     reservations Reservation[]
-    images       RoomImage[] // Array to store fileUrl and fileKey
+    images       RoomImageRelation[] // Updated field to use intermediary model
 
     @@index([roomTypeId])
 }
 
 model RoomImage {
-    id      String @id @default(cuid())
-    fileUrl String
-    fileKey String
-    roomId  String
-    room    Room   @relation(fields: [roomId], references: [id])
+    id         String              @id @default(cuid())
+    fileUrl    String
+    fileKey    String
+    roomImages RoomImageRelation[] // Updated field to use intermediary model
+
+    @@index([fileUrl])
+}
+
+model RoomImageRelation {
+    id          String    @id @default(cuid())
+    roomId      String
+    room        Room      @relation(fields: [roomId], references: [id])
+    roomImage   RoomImage @relation(fields: [roomImageId], references: [id])
+    roomImageId String
 
     @@index([roomId])
+    @@index([roomImageId])
 }
 
 model Reservation {
-    id        String   @id @default(cuid())
+    id        String            @id @default(cuid())
     userId    String
-    room      Room     @relation(fields: [roomId], references: [id])
-    roomId    String   @unique
+    room      Room              @relation(fields: [roomId], references: [id])
+    roomId    String            @unique
     checkIn   DateTime
     checkOut  DateTime
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    status    ReservationStatus @default(CONFIRMED)
+    createdAt DateTime          @default(now())
+    updatedAt DateTime          @updatedAt
+    orders    Order[]
 
     @@index([roomId])
 }
@@ -58,4 +70,46 @@ model Task {
     id          String @id @default(cuid())
     shortDesc   String
     description String
+}
+
+model Item {
+    id         String       @id @default(cuid())
+    name       String
+    itemOrders ItemOrders[]
+}
+
+model Order {
+    id            String       @id @default(cuid())
+    userId        String?
+    customerName  String
+    customerEmail String?
+    items         ItemOrders[]
+    status        OrderStatus? @default(UNPAID)
+    reservationId String?
+    reservation   Reservation? @relation(fields: [reservationId], references: [id])
+
+    @@index([reservationId])
+}
+
+model ItemOrders {
+    id       String @id @default(cuid())
+    itemId   String
+    item     Item   @relation(fields: [itemId], references: [id])
+    orderId  String
+    order    Order  @relation(fields: [orderId], references: [id])
+    quantity Int    @default(1)
+
+    @@index([orderId])
+    @@index([itemId])
+}
+
+enum OrderStatus {
+    PAID
+    UNPAID
+}
+
+enum ReservationStatus {
+    CONFIRMED
+    CHECKED_IN
+    CHECKED_OUT
 }

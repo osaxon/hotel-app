@@ -10,35 +10,41 @@ import {
   privateProcedure,
 } from "@/server/api/trpc";
 
-import type { Reservation, Room } from "@prisma/client";
+import type { Reservation, Room, Prisma } from "@prisma/client";
 
-// Create a new ratelimiter, that allows 3 requests per 1 min
-// const ratelimit = new Ratelimit({
-//   redis: Redis.fromEnv(),
-//   limiter: Ratelimit.slidingWindow(3, "1 m"),
-//   analytics: true,
-// });
+type ReservationWithRoom = Prisma.ReservationGetPayload<{
+  include: { room: true };
+}>;
 
-const addUserDataToReservation = async (reservations: Reservation[]) => {
+const addUserDataToReservation = async (
+  reservations: ReservationWithRoom[]
+) => {
+  // Extract all user IDs from reservations data
+  const userIds = reservations.map((reservation) => reservation.userId);
+
+  // Fetch user data for the extracted IDs
   const users = await clerkClient.users.getUserList({
-    userId: reservations.map((reservation) => reservation.userId),
+    userId: userIds,
     limit: 100,
   });
 
+  // Map user data to corresponding reservation
   return reservations.map((reservation) => {
-    const guest = users.find((user) => user.id === reservation.userId);
-    if (!guest)
+    const user = users.find((user) => user.id === reservation.userId);
+
+    if (!user || !user.username)
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
-        message: "No author found",
+        message: "No user found",
       });
 
     return {
       ...reservation,
       // Causes ESLint Type error if just author object returned. Error fixed by returning this way
-      guest: {
-        ...guest,
-        username: guest.username,
+      user: {
+        ...user,
+        username: user.username,
+        firstName: user.firstName,
       },
     };
   });
@@ -49,7 +55,6 @@ export const reservationsRouter = createTRPCRouter({
     const reservations = await ctx.prisma.reservation.findMany({
       take: 100,
     });
-    console.log(reservations);
     return reservations;
   }),
 
@@ -63,8 +68,27 @@ export const reservationsRouter = createTRPCRouter({
             gte: new Date(),
           },
         },
+        include: {
+          room: true,
+        },
         take: 100,
       });
-      return addUserDataToReservation(reservations);
+      const withUserData = await addUserDataToReservation(reservations);
+      return withUserData;
     }),
+
+  getActiveReservations: publicProcedure.query(async ({ ctx }) => {
+    const reservations = await ctx.prisma.reservation.findMany({
+      where: {
+        status: {
+          in: ["CHECKED_IN", "CONFIRMED"],
+        },
+      },
+      include: {
+        room: true,
+      },
+    });
+    const withUserData = await addUserDataToReservation(reservations);
+    return withUserData;
+  }),
 });
