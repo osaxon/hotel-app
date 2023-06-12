@@ -8,6 +8,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import dayjs from "dayjs";
 
 import { api } from "@/utils/api";
 import LoadingSpinner from "@/components/loading";
@@ -32,13 +34,21 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { type Item } from "@prisma/client";
+import { generateSSGHelper } from "@/server/helpers/ssgHelper";
+import { GetStaticProps } from "next";
 
 type SelectedItem = {
   itemId: string;
   quantity: number;
 };
 
+type SelectedCustomer = {
+  customer: string | null;
+  reservationId: string | null;
+};
+
 const FormSchema = z.object({
+  room: z.string().optional(),
   customer: z.string(),
 });
 
@@ -47,6 +57,7 @@ export default function OrdersPage() {
     resolver: zodResolver(FormSchema),
   });
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<SelectedCustomer>();
 
   const {
     data: items,
@@ -58,7 +69,10 @@ export default function OrdersPage() {
     data: reservations,
     isError: isReservationsError,
     isLoading: isLoadingReservations,
-  } = api.reservations.getActiveReservations.useQuery();
+  } = api.reservations.getActiveReservations.useQuery(undefined, {
+    staleTime: 5000,
+    refetchOnWindowFocus: true,
+  });
 
   const { mutate: createOrder } = api.pos.createOrder.useMutation();
 
@@ -82,7 +96,6 @@ export default function OrdersPage() {
   }
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    console.log("onSubmit");
     const orderPayload = {
       ...data,
       items: selectedItems,
@@ -117,37 +130,79 @@ export default function OrdersPage() {
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className=" space-y-6"
+                className="space-y-6 md:w-2/3"
               >
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  {items &&
-                    items.map((item) => {
-                      const selectedItem = selectedItems.find(
-                        (selectedItem) => selectedItem.itemId === item.id
-                      );
-                      return (
+                {isLoadingItems ? (
+                  <LoadingSpinner />
+                ) : (
+                  items && (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                      {items.map((item) => {
+                        const selectedItem = selectedItems.find(
+                          (selectedItem) => selectedItem.itemId === item.id
+                        );
+                        return (
+                          <Card
+                            className="cursor-pointer"
+                            onClick={() => handleAdd(item)}
+                            key={item.id}
+                          >
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                              <CardTitle className="flex flex-col">
+                                <span className="text-2xl">{item.name}</span>
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex flex-col gap-y-4">
+                              <span className="text-sm font-medium text-muted-foreground">
+                                {item.name}
+                              </span>
+                              <span className="flex select-none items-center gap-2 text-sm font-medium text-muted-foreground">
+                                Qty: {selectedItem ? selectedItem.quantity : 0}
+                              </span>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )
+                )}
+                <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  {reservations &&
+                    reservations.map(
+                      ({ room, roomId, user, checkIn, checkOut, id }) => (
                         <Card
+                          onClick={() =>
+                            setSelectedCustomer({
+                              reservationId: id,
+                              customer:
+                                user.firstName ??
+                                user.primaryEmailAddressId ??
+                                "",
+                            })
+                          }
                           className="cursor-pointer"
-                          onClick={() => handleAdd(item)}
-                          key={item.id}
+                          key={roomId}
                         >
                           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="flex flex-col">
-                              <span className="text-2xl">{item.name}</span>
+                              <span className="text-2xl">
+                                Room {room.roomNumber}
+                              </span>
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="flex flex-col gap-y-4">
-                            <span className="text-sm font-medium text-muted-foreground">
-                              {item.name}
-                            </span>
-                            <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                              Qty: {selectedItem ? selectedItem.quantity : 0}
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={user.imageUrl} alt="" />
+                              <AvatarFallback>SC</AvatarFallback>
+                            </Avatar>
+                            <span className="flex select-none items-center gap-2 text-sm font-medium text-muted-foreground">
+                              Checked in: {dayjs(checkIn).format("DD/MM/YYYY")}
                             </span>
                           </CardContent>
                         </Card>
-                      );
-                    })}
-                </div>
+                      )
+                    )}
+                </section>
 
                 <FormField
                   control={form.control}
@@ -156,7 +211,11 @@ export default function OrdersPage() {
                     <FormItem>
                       <FormLabel>Name</FormLabel>
                       <FormControl>
-                        <Input type="text" {...field} />
+                        <Input
+                          type="text"
+                          {...field}
+                          value={selectedCustomer?.customer || field.value}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -167,7 +226,11 @@ export default function OrdersPage() {
                   <Button type="submit">Submit</Button>
                   <Button
                     variant="destructive"
-                    onClick={() => setSelectedItems([])}
+                    onClick={() => {
+                      setSelectedItems([]);
+                      setSelectedCustomer({ customer: "", reservationId: "" });
+                    }}
+                    type="reset"
                   >
                     Clear Order
                   </Button>
@@ -180,3 +243,15 @@ export default function OrdersPage() {
     </AdminLayout>
   );
 }
+
+export const getStaticProps: GetStaticProps = async () => {
+  const ssg = generateSSGHelper();
+
+  await ssg.pos.getItems.prefetch();
+
+  return {
+    props: {
+      trcpState: ssg.dehydrate(),
+    },
+  };
+};
