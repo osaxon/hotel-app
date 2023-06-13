@@ -10,13 +10,8 @@ import {
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import dayjs from "dayjs";
-
 import { api } from "@/utils/api";
 import LoadingSpinner from "@/components/loading";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Switch } from "@/components/ui/switch";
 import {
   Form,
   FormControl,
@@ -30,16 +25,18 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
-
+import { cn, convertToNormalCase, isHappyHour } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { type Item } from "@prisma/client";
 import { generateSSGHelper } from "@/server/helpers/ssgHelper";
 import { GetStaticProps } from "next";
+import { OrdersTable } from "@/components/OrdersTable";
 
 type SelectedItem = {
   itemId: string;
   quantity: number;
+  priceUSD: string;
+  happyHourPriceUSD: string;
 };
 
 type SelectedCustomer = {
@@ -58,6 +55,7 @@ export default function OrdersPage() {
   });
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<SelectedCustomer>();
+  const happyHour = isHappyHour();
 
   const {
     data: items,
@@ -91,7 +89,15 @@ export default function OrdersPage() {
 
       setSelectedItems(updatedItems);
     } else {
-      setSelectedItems([...selectedItems, { itemId: item.id, quantity: 1 }]);
+      setSelectedItems([
+        ...selectedItems,
+        {
+          itemId: item.id,
+          quantity: 1,
+          priceUSD: item.priceUSD.toString(),
+          happyHourPriceUSD: item.happyHourPriceUSD?.toString() || "",
+        },
+      ]);
     }
   }
 
@@ -130,7 +136,7 @@ export default function OrdersPage() {
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-6 md:w-2/3"
+                className="w-full space-y-6 xl:w-2/3"
               >
                 {isLoadingItems ? (
                   <LoadingSpinner />
@@ -154,11 +160,34 @@ export default function OrdersPage() {
                             </CardHeader>
                             <CardContent className="flex flex-col gap-y-4">
                               <span className="text-sm font-medium text-muted-foreground">
-                                {item.name}
+                                {convertToNormalCase(item.category)}
                               </span>
                               <span className="flex select-none items-center gap-2 text-sm font-medium text-muted-foreground">
                                 Qty: {selectedItem ? selectedItem.quantity : 0}
                               </span>
+                              <div className="flex gap-2">
+                                <span
+                                  className={cn(
+                                    "flex select-none items-center gap-2 text-sm font-medium text-muted-foreground",
+                                    isHappyHour() === true &&
+                                      item.happyHourPriceUSD &&
+                                      "italic text-red-500 line-through"
+                                  )}
+                                >
+                                  $ {item.priceUSD.toNumber()}
+                                </span>
+                                {isHappyHour() === true &&
+                                  item.happyHourPriceUSD && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="flex select-none items-center gap-2 text-sm font-medium text-muted-foreground">
+                                        $ {item.happyHourPriceUSD?.toNumber()}
+                                      </span>
+                                      <span className="text-sm text-muted-foreground">
+                                        *Happy Hour*
+                                      </span>
+                                    </div>
+                                  )}
+                              </div>
                             </CardContent>
                           </Card>
                         );
@@ -237,6 +266,10 @@ export default function OrdersPage() {
                 </div>
               </form>
             </Form>
+          </TabsContent>
+
+          <TabsContent value="open-orders" className="space-y-4">
+            <OrdersTable />
           </TabsContent>
         </Tabs>
       </main>

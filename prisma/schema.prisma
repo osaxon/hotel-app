@@ -73,10 +73,12 @@ model Task {
 }
 
 model Item {
-    id         String       @id @default(cuid())
-    name       String
-    price      Int
-    itemOrders ItemOrders[]
+    id                String       @id @default(cuid())
+    name              String
+    priceUSD          Decimal      @db.Decimal(10, 2)
+    happyHourPriceUSD Decimal?     @db.Decimal(10, 2)
+    itemOrders        ItemOrders[]
+    category          ItemCategory
 }
 
 model Order {
@@ -88,7 +90,8 @@ model Order {
     status        OrderStatus? @default(UNPAID)
     reservationId String?
     reservation   Reservation? @relation(fields: [reservationId], references: [id])
-    subTotal      Int?
+    subTotalUSD   Decimal      @db.Decimal(10, 2)
+    happyHour     Boolean      @default(false)
 
     @@index([reservationId])
 }
@@ -114,4 +117,12 @@ enum ReservationStatus {
     CONFIRMED
     CHECKED_IN
     CHECKED_OUT
+}
+
+enum ItemCategory {
+    SOFT_DRINKS
+    BEER
+    WINE
+    SPIRITS
+    SNACKS
 }

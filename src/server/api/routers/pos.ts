@@ -1,5 +1,4 @@
 import { clerkClient } from "@clerk/nextjs/server";
-import type { User } from "@clerk/nextjs/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
@@ -9,6 +8,8 @@ import {
 } from "@/server/api/trpc";
 import { env } from "@/env.mjs";
 import type { Order, Item, ItemOrders } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { isHappyHour } from "@/lib/utils";
 
 const addUserDataToOrder = async (orders: Order[]) => {
   const users = await clerkClient.users.getUserList({
@@ -35,13 +36,27 @@ const addUserDataToOrder = async (orders: Order[]) => {
   });
 };
 
+function getSubTotal(
+  items: { priceUSD: Prisma.Decimal; quantity: number }[]
+): string {
+  const fn = (
+    total: number,
+    { priceUSD, quantity }: { priceUSD: Prisma.Decimal; quantity: number }
+  ) => total + Number(priceUSD) * quantity;
+
+  const subTotal = items.reduce(fn, 0);
+  return subTotal.toFixed(2); // Return the sub-total as a string with 2 decimal places
+}
+
 // Define the input schema using Zod
 const createOrderInputSchema = z.object({
   customer: z.string(),
+  room: z.string().optional(),
   items: z.array(
     z.object({
       itemId: z.string(),
       quantity: z.number().positive(),
+      priceUSD: z.string().transform((value) => new Prisma.Decimal(value)),
     })
   ),
 });
@@ -89,6 +104,8 @@ export const posRouter = createTRPCRouter({
               quantity: item.quantity,
             })),
           },
+          happyHour: false,
+          subTotalUSD: getSubTotal(items),
         },
         include: {
           items: true,
