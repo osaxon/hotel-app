@@ -50,7 +50,7 @@ function getSubTotal(
 
 // Define the input schema using Zod
 const createOrderInputSchema = z.object({
-  customer: z.string(),
+  customerName: z.string().optional(),
   room: z.string().optional(),
   items: z.array(
     z.object({
@@ -59,6 +59,8 @@ const createOrderInputSchema = z.object({
       priceUSD: z.string().transform((value) => new Prisma.Decimal(value)),
     })
   ),
+  reservationId: z.string().optional(),
+  guestId: z.string().optional(),
 });
 
 // Define the response schema using Zod
@@ -67,8 +69,6 @@ const createOrderResponseSchema = z.object({
   customer: z.object({
     id: z.string(),
     username: z.string(),
-
-    // TODO: Add other properties
   }),
 });
 
@@ -77,6 +77,29 @@ export const posRouter = createTRPCRouter({
     const orders = await ctx.prisma.order.findMany({
       include: {
         items: true,
+      },
+    });
+
+    return orders;
+  }),
+
+  getLastDay: publicProcedure.query(async ({ ctx }) => {
+    const currentDate = new Date();
+    const twentyFourHoursAgo = new Date(
+      currentDate.getTime() - 24 * 60 * 60 * 1000
+    );
+    const orders = await ctx.prisma.order.findMany({
+      where: {
+        createdAt: {
+          gte: twentyFourHoursAgo,
+        },
+      },
+      include: {
+        items: {
+          include: {
+            item: true,
+          },
+        },
       },
     });
 
@@ -92,24 +115,75 @@ export const posRouter = createTRPCRouter({
   createOrder: publicProcedure
     .input(createOrderInputSchema)
     .mutation(async ({ ctx, input }) => {
-      const { customer, items } = input;
-      const order = await ctx.prisma.order.create({
-        data: {
-          customerName: customer,
-          items: {
-            create: items.map((item) => ({
-              item: {
-                connect: { id: item.itemId },
-              },
-              quantity: item.quantity,
-            })),
+      const { customerName, items, guestId, reservationId } = input;
+      let order;
+      if (guestId && reservationId) {
+        order = await ctx.prisma.order.create({
+          data: {
+            items: {
+              create: items.map((item) => ({
+                item: {
+                  connect: { id: item.itemId },
+                },
+                quantity: item.quantity,
+              })),
+            },
+            guest: {
+              connect: { id: input.guestId },
+            },
+            customerName: customerName,
+            reservation: {
+              connect: { id: reservationId },
+            },
+            happyHour: false,
+            subTotalUSD: getSubTotal(items),
           },
-          happyHour: false,
-          subTotalUSD: getSubTotal(items),
-        },
-        include: {
-          items: true,
-        },
-      });
+          include: {
+            items: true,
+          },
+        });
+      } else if (guestId && !reservationId) {
+        order = await ctx.prisma.order.create({
+          data: {
+            items: {
+              create: items.map((item) => ({
+                item: {
+                  connect: { id: item.itemId },
+                },
+                quantity: item.quantity,
+              })),
+            },
+            guest: {
+              connect: { id: input.guestId },
+            },
+            customerName: customerName,
+            happyHour: false,
+            subTotalUSD: getSubTotal(items),
+          },
+          include: {
+            items: true,
+          },
+        });
+      } else {
+        order = await ctx.prisma.order.create({
+          data: {
+            items: {
+              create: items.map((item) => ({
+                item: {
+                  connect: { id: item.itemId },
+                },
+                quantity: item.quantity,
+              })),
+            },
+            customerName: customerName,
+            happyHour: isHappyHour(),
+            subTotalUSD: getSubTotal(items),
+          },
+          include: {
+            items: true,
+          },
+        });
+      }
+      return order;
     }),
 });

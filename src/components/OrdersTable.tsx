@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { LoadingPage } from "./loading";
 
 export const columns: ColumnDef<Order>[] = [
   {
@@ -80,14 +81,14 @@ export const columns: ColumnDef<Order>[] = [
   },
   {
     accessorKey: "subTotalUSD",
-    header: () => <div className="text-right">Amount</div>,
+    header: () => <div className="">Amount</div>,
     cell: ({ row }) => {
       const amount = Number(row.getValue("subTotalUSD"));
       const formatted = new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "USD",
       }).format(amount);
-      return <div className="text-right font-medium">{formatted}</div>;
+      return <div className="font-medium">{formatted}</div>;
     },
   },
 
@@ -123,6 +124,7 @@ export const columns: ColumnDef<Order>[] = [
 
 export function OrdersTable() {
   const { data: orders, isError, isLoading } = api.pos.getAllOrders.useQuery();
+  if (isLoading) return <LoadingPage />;
   if (!orders) return null;
   return <DataTable data={orders} columns={columns} />;
 }

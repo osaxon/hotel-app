@@ -16,20 +16,20 @@ model Room {
     id           String              @id @default(cuid())
     roomNumber   String              @unique
     roomName     String?
-    roomTypeId   String
-    roomType     RoomType            @relation(fields: [roomTypeId], references: [id])
+    roomType     RoomType            @default(STANDARD)
+    status       RoomStatus          @default(VACANT)
     capacity     Int
     reservations Reservation[]
-    images       RoomImageRelation[] // Updated field to use intermediary model
+    images       RoomImageRelation[]
 
-    @@index([roomTypeId])
+    dailyRateUSD Decimal @default(20) @db.Decimal(10, 2)
 }
 
 model RoomImage {
     id         String              @id @default(cuid())
     fileUrl    String
     fileKey    String
-    roomImages RoomImageRelation[] // Updated field to use intermediary model
+    roomImages RoomImageRelation[]
 
     @@index([fileUrl])
 }
@@ -45,25 +45,42 @@ model RoomImageRelation {
     @@index([roomImageId])
 }
 
+model Guest {
+    id                   String        @id @default(cuid())
+    firstName            String
+    surname              String
+    fullName             String?
+    email                String
+    reservations         Reservation[]
+    currentReservationId String?
+    orders               Order[]
+    type                 GuestType     @default(HOTEL)
+}
+
 model Reservation {
     id        String            @id @default(cuid())
-    userId    String
-    room      Room              @relation(fields: [roomId], references: [id])
-    roomId    String            @unique
+    guest     Guest?            @relation(fields: [guestId], references: [id])
+    guestId   String?
+    userId    String?
+    room      Room?             @relation(fields: [roomId], references: [id])
+    roomId    String?           @unique
+    roomType  RoomType?         @default(STANDARD)
     checkIn   DateTime
     checkOut  DateTime
     status    ReservationStatus @default(CONFIRMED)
     createdAt DateTime          @default(now())
-    updatedAt DateTime          @updatedAt
+    updatedAt DateTime?         @updatedAt
     orders    Order[]
 
-    @@index([roomId])
-}
+    // Basic user information fields
+    customerName  String
+    customerEmail String?
 
-model RoomType {
-    id    String @id @default(cuid())
-    name  String
-    rooms Room[]
+    subTotalUSD   Decimal?      @db.Decimal(10, 2)
+    paymentStatus PaymentStatus @default(UNPAID)
+
+    @@index([roomId])
+    @@index([guestId])
 }
 
 model Task {
@@ -84,7 +101,9 @@ model Item {
 model Order {
     id            String       @id @default(cuid())
     userId        String?
-    customerName  String
+    guestId       String?
+    guest         Guest?       @relation(fields: [guestId], references: [id])
+    customerName  String?
     customerEmail String?
     items         ItemOrders[]
     status        OrderStatus? @default(UNPAID)
@@ -92,8 +111,10 @@ model Order {
     reservation   Reservation? @relation(fields: [reservationId], references: [id])
     subTotalUSD   Decimal      @db.Decimal(10, 2)
     happyHour     Boolean      @default(false)
+    createdAt     DateTime     @default(now())
 
     @@index([reservationId])
+    @@index([guestId])
 }
 
 model ItemOrders {
@@ -116,6 +137,7 @@ enum OrderStatus {
 enum ReservationStatus {
     CONFIRMED
     CHECKED_IN
+    FINAL_BILL
     CHECKED_OUT
 }
 
@@ -125,4 +147,27 @@ enum ItemCategory {
     WINE
     SPIRITS
     SNACKS
+}
+
+enum RoomType {
+    STANDARD
+    SUPERIOR
+    DELUXE
+}
+
+enum GuestType {
+    HOTEL
+    OUTSIDE
+    STAFF
+}
+
+enum RoomStatus {
+    OCCUPIED
+    VACANT
+    MAINTENANCE
+}
+
+enum PaymentStatus {
+    PAID
+    UNPAID
 }

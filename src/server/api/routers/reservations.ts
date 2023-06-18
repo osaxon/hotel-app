@@ -10,17 +10,26 @@ import {
   privateProcedure,
 } from "@/server/api/trpc";
 
-import type { Reservation, Room, Prisma } from "@prisma/client";
+import {
+  Reservation,
+  Room,
+  Prisma,
+  ReservationStatus,
+  Guest,
+  RoomStatus,
+  PaymentStatus,
+} from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime";
 
 type ReservationWithRoom = Prisma.ReservationGetPayload<{
   include: { room: true };
 }>;
 
-const addUserDataToReservation = async (
-  reservations: ReservationWithRoom[]
-) => {
-  // Extract all user IDs from reservations data
-  const userIds = reservations.map((reservation) => reservation.userId);
+const addClerkUserData = async (reservations: ReservationWithRoom[]) => {
+  // Extract all user IDs from reservations data and filter out null values
+  const userIds = reservations
+    .map((reservation) => reservation.userId)
+    .filter((userId): userId is string => userId !== null);
 
   // Fetch user data for the extracted IDs
   const users = await clerkClient.users.getUserList({
@@ -40,7 +49,6 @@ const addUserDataToReservation = async (
 
     return {
       ...reservation,
-      // Causes ESLint Type error if just author object returned. Error fixed by returning this way
       user: {
         ...user,
         username: user.username,
@@ -58,6 +66,51 @@ export const reservationsRouter = createTRPCRouter({
     return reservations;
   }),
 
+  createReservation: publicProcedure
+    .input(
+      z.object({
+        customerName: z.string(),
+        checkIn: z.date(),
+        checkOut: z.date(),
+        guestId: z.string().optional(),
+        customerEmail: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      let reservation;
+      if (input.guestId) {
+        reservation = await ctx.prisma.reservation.create({
+          data: {
+            customerName: input.customerName,
+            checkIn: input.checkIn,
+            checkOut: input.checkOut,
+            guest: {
+              connect: { id: input.guestId },
+            },
+            customerEmail: input.customerEmail,
+          },
+          include: {
+            room: true,
+            guest: true,
+          },
+        });
+      } else {
+        reservation = await ctx.prisma.reservation.create({
+          data: {
+            customerName: input.customerName,
+            checkIn: input.checkIn,
+            checkOut: input.checkOut,
+            customerEmail: input.customerEmail,
+          },
+          include: {
+            room: true,
+          },
+        });
+      }
+
+      return reservation;
+    }),
+
   getRoomReservations: publicProcedure
     .input(z.object({ roomId: z.string() }))
     .query(async ({ ctx, input }) => {
@@ -73,22 +126,160 @@ export const reservationsRouter = createTRPCRouter({
         },
         take: 100,
       });
-      const withUserData = await addUserDataToReservation(reservations);
+      const withUserData = await addClerkUserData(reservations);
       return withUserData;
+    }),
+
+  getByID: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const reservation = await ctx.prisma.reservation.findUnique({
+        where: { id: input.id },
+        include: {
+          room: true,
+          orders: {
+            include: {
+              items: {
+                include: {
+                  item: true,
+                },
+              },
+            },
+          },
+          guest: {
+            include: {
+              orders: {
+                include: {
+                  items: true,
+                },
+              },
+            },
+          },
+        },
+      });
+      return reservation;
+    }),
+
+  checkIn: publicProcedure
+    .input(
+      z.object({
+        reservationId: z.string(),
+        customerName: z.string(),
+        firstName: z.string(),
+        surname: z.string(),
+        customerEmail: z.string().email(),
+        roomId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const fullName = input.customerName.split(" ");
+      const firstName = fullName[0]?.toString();
+      const surname = fullName[1]?.toString();
+
+      const reservation = await ctx.prisma.reservation.update({
+        where: { id: input.reservationId },
+        data: {
+          status: ReservationStatus.CHECKED_IN,
+
+          guest: {
+            create: {
+              email: input.customerEmail,
+              firstName: input.firstName,
+              surname: input.surname,
+              currentReservationId: input.reservationId,
+            },
+          },
+
+          room: {
+            connect: {
+              id: input.roomId,
+            },
+            update: {
+              status: RoomStatus.OCCUPIED,
+            },
+          },
+        },
+        include: {
+          room: true,
+        },
+      });
+    }),
+
+  calculateSubTotal: publicProcedure
+    .input(
+      z.object({
+        reservationId: z.string(),
+        checkIn: z.date(),
+        checkOut: z.date(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const totalDays = dayjs(input.checkOut).diff(dayjs(input.checkIn), "day");
+
+      // Fetch the Reservation and include the associated Room
+      const reservation = await ctx.prisma.reservation.findUnique({
+        where: { id: input.reservationId },
+        include: { room: true },
+      });
+
+      if (!reservation) {
+        throw new Error("Reservation not found");
+      }
+
+      const dailyRate = reservation.room?.dailyRateUSD?.toString();
+      const subTotal = dailyRate ? parseFloat(dailyRate) * totalDays : 0;
+
+      const updatedReservation = await ctx.prisma.reservation.update({
+        where: { id: input.reservationId },
+        data: {
+          subTotalUSD: new Decimal(subTotal),
+          status: ReservationStatus.FINAL_BILL,
+        },
+      });
+
+      return updatedReservation;
+    }),
+
+  checkOut: publicProcedure
+    .input(
+      z.object({
+        reservationId: z.string(),
+        roomId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const reservation = await ctx.prisma.reservation.update({
+        where: { id: input.reservationId },
+        data: {
+          status: ReservationStatus.CHECKED_OUT,
+
+          guest: {
+            update: { currentReservationId: "" },
+          },
+
+          room: {
+            update: {
+              status: RoomStatus.VACANT,
+            },
+          },
+        },
+        include: {
+          room: true,
+        },
+      });
     }),
 
   getActiveReservations: publicProcedure.query(async ({ ctx }) => {
     const reservations = await ctx.prisma.reservation.findMany({
       where: {
         status: {
-          in: ["CHECKED_IN", "CONFIRMED"],
+          in: ["CHECKED_IN", "CONFIRMED", "FINAL_BILL"],
         },
       },
       include: {
         room: true,
       },
     });
-    const withUserData = await addUserDataToReservation(reservations);
-    return withUserData;
+    return reservations;
   }),
 });

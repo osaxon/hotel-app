@@ -55,9 +55,6 @@ export default function NewRoomModal() {
   const uploadedImgs = useStore((state) => state.uploadedImgs);
   const setUploadedImgs = useStore((state) => state.setUploadedImgs);
 
-  const { data: types, isLoading: isLoadingTypes } =
-    api.rooms.getRoomTypes.useQuery(undefined, { retry: false });
-
   const { mutate: addRoom } = api.rooms.createRoom.useMutation({
     onSuccess: (data) => {
       setModalOpen(false);
@@ -114,13 +111,6 @@ export default function NewRoomModal() {
     });
   }
 
-  if (isLoadingTypes)
-    return (
-      <>
-        <LoadingSpinner />
-      </>
-    );
-
   return (
     <AlertDialog>
       <AlertDialogTrigger>
@@ -155,37 +145,6 @@ export default function NewRoomModal() {
                   <FormControl>
                     <Input placeholder="Marvin" {...field} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="roomTypeId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Room Type</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select the room type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {types &&
-                        types.map((type) => (
-                          <SelectItem key={type.id} value={type.id}>
-                            {type.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    You can update this later in dashboard{" "}
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

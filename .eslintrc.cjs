@@ -38,6 +38,7 @@ const config = {
       },
     ],
   },
+  ignorePatterns: ["src/seed.js"],
 };
 
 module.exports = config;

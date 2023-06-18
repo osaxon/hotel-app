@@ -13,7 +13,7 @@ import {
 } from "@/server/api/trpc";
 import { env } from "@/env.mjs";
 import DataURIParser from "datauri/parser";
-import type { Reservation, Room, RoomType } from "@prisma/client";
+import { Reservation, Room, RoomType } from "@prisma/client";
 
 interface CustomParams {
   folder: string;
@@ -49,7 +49,6 @@ export const roomsRouter = createTRPCRouter({
     const rooms = await ctx.prisma.room.findMany({
       include: {
         reservations: true,
-        roomType: true,
         images: true,
       },
     });
@@ -79,7 +78,6 @@ export const roomsRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const rooms = await ctx.prisma.room.findMany({
         include: {
-          roomType: true,
           reservations: {
             where: {
               checkIn: { lte: input.endDate },
@@ -97,9 +95,13 @@ export const roomsRouter = createTRPCRouter({
       return availableRooms;
     }),
 
-  getRoomTypes: publicProcedure.query(async ({ ctx }) => {
-    const types = await ctx.prisma.roomType.findMany();
-    return types;
+  getVacanctRooms: publicProcedure.query(async ({ ctx }) => {
+    const rooms = await ctx.prisma.room.findMany({
+      where: {
+        status: "VACANT",
+      },
+    });
+    return rooms;
   }),
 
   // create new room
@@ -108,7 +110,6 @@ export const roomsRouter = createTRPCRouter({
       z.object({
         roomNumber: z.string(),
         roomName: z.string(),
-        roomTypeId: z.string(),
         capacity: z.number(),
         image: z.any(),
       })
@@ -121,11 +122,6 @@ export const roomsRouter = createTRPCRouter({
           roomNumber: input.roomNumber,
           roomName: input.roomName,
           capacity: input.capacity,
-          roomType: {
-            connect: {
-              id: input.roomTypeId,
-            },
-          },
         },
       });
       return room;
