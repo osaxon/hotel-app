@@ -1,21 +1,13 @@
 import AdminLayout from "@/components/LayoutAdmin";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import dayjs from "dayjs";
 import { api } from "@/utils/api";
-import LoadingSpinner, { LoadingPage } from "@/components/loading";
+import { LoadingPage } from "@/components/loading";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -30,17 +22,16 @@ import { cn, convertToNormalCase, isHappyHour } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { type Item } from "@prisma/client";
 import { generateSSGHelper } from "@/server/helpers/ssgHelper";
-import { GetStaticProps } from "next";
 import { OrdersTable } from "@/components/OrdersTable";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { type GetStaticProps } from "next";
 
 type SelectedItem = {
   itemName: string;
@@ -69,28 +60,11 @@ export default function OrdersPage() {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
   });
-  const happyHour = isHappyHour();
 
-  const {
-    data: items,
-    isError: isItemsError,
-    isLoading: isLoadingItems,
-  } = api.pos.getItems.useQuery();
+  const { data: items, isLoading: isLoadingItems } =
+    api.pos.getItems.useQuery();
 
-  const {
-    data: reservations,
-    isError: isReservationsError,
-    isLoading: isLoadingReservations,
-  } = api.reservations.getActiveReservations.useQuery(undefined, {
-    staleTime: 5000,
-    refetchOnWindowFocus: true,
-  });
-
-  const {
-    data: guests,
-    isError: isGuestsError,
-    isLoading: isLoadingGuests,
-  } = api.guests.getAll.useQuery(undefined, {
+  const { data: guests } = api.guests.getAll.useQuery(undefined, {
     staleTime: 5000,
     refetchOnWindowFocus: true,
   });
@@ -233,54 +207,6 @@ export default function OrdersPage() {
                   </h3>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  {/* {reservations &&
-                    reservations
-                      .filter(
-                        (reservation) =>
-                          reservation.status === "CHECKED_IN" &&
-                          reservation.roomId !== null
-                      )
-                      .map(
-                        ({
-                          room,
-                          roomId,
-                          customerName,
-                          checkIn,
-                          checkOut,
-                          guestId,
-                          id,
-                        }) => (
-                          <Card
-                            onClick={() => {
-                              setSelectedCustomer({
-                                customer: customerName,
-                                reservationId: id,
-                                guestId: guestId,
-                              });
-                              form.setValue("customerName", customerName);
-                              form.setValue("reservationId", id);
-                              form.setValue("guestId", guestId ?? "");
-                            }}
-                            className="cursor-pointer"
-                            key={roomId}
-                          >
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                              <CardTitle className="flex flex-col">
-                                <span className="text-2xl">
-                                  Room {room?.roomNumber}
-                                </span>
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex flex-col gap-y-4">
-                              <span>{customerName}</span>
-                              <span className="flex select-none items-center gap-2 text-sm font-medium text-muted-foreground">
-                                Checked in:{" "}
-                                {dayjs(checkIn).format("DD/MM/YYYY")}
-                              </span>
-                            </CardContent>
-                          </Card>
-                        )
-                      )} */}
                   {guests &&
                     guests
                       .filter(

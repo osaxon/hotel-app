@@ -1,12 +1,8 @@
-import type { GetStaticProps, NextPage, GetStaticPaths } from "next";
-import { ParsedUrlQuery } from "querystring";
-import { MainNav } from "@/components/MainNav";
-import { UserNav } from "@/components/UserNav";
+import type { GetStaticProps, NextPage } from "next";
 import { api } from "@/utils/api";
 import { LoadingPage } from "@/components/loading";
 import { generateSSGHelper } from "@/server/helpers/ssgHelper";
 import AdminLayout from "@/components/LayoutAdmin";
-import type { Room } from "@prisma/client";
 
 const SingleRoomAdminPage: NextPage<{ id: string }> = ({ id }) => {
   const { data, isLoading } = api.rooms.getById.useQuery({

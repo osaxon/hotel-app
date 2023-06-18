@@ -1,6 +1,5 @@
 import { type NextPage } from "next";
 import Head from "next/head";
-import Link from "next/link";
 import { api } from "@/utils/api";
 import { useStore } from "@/store/appStore";
 import { useState } from "react";
@@ -22,11 +21,7 @@ const Home: NextPage = () => {
   const startDate = selectedDate?.from || new Date();
   const endDate = selectedDate?.to || new Date();
 
-  const {
-    data: availableRooms,
-    isLoading: loadingAvailableRooms,
-    isError: errorLoadingRooms,
-  } = api.rooms.getAvailable.useQuery(
+  const { data: availableRooms } = api.rooms.getAvailable.useQuery(
     { startDate, endDate },
     { enabled: enabled, onSettled: () => setEnabled(false) }
   );

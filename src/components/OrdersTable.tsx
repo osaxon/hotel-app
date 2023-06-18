@@ -1,7 +1,7 @@
 import { api } from "@/utils/api";
 import DataTable from "./DataTable";
-import { Order, Prisma, OrderStatus } from "@prisma/client";
-import { ColumnDef } from "@tanstack/react-table";
+import { type Order } from "@prisma/client";
+import { type ColumnDef } from "@tanstack/react-table";
 import { Badge } from "./ui/badge";
 import Link from "next/link";
 import { Button } from "./ui/button";
@@ -120,7 +120,7 @@ export const columns: ColumnDef<Order>[] = [
 ];
 
 export function OrdersTable() {
-  const { data: orders, isError, isLoading } = api.pos.getAllOrders.useQuery();
+  const { data: orders, isLoading } = api.pos.getAllOrders.useQuery();
   if (isLoading) return <LoadingPage />;
   if (!orders) return null;
   return <DataTable data={orders} columns={columns} />;

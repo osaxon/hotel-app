@@ -11,11 +11,7 @@ const CheckInPage: NextPage = () => {
 
   const reservationId = id as string;
 
-  const {
-    data: reservation,
-    isLoading,
-    isError,
-  } = api.reservations.getByID.useQuery(
+  const { data: reservation, isLoading } = api.reservations.getByID.useQuery(
     { id: reservationId },
     { staleTime: Infinity }
   );

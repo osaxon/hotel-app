@@ -1,10 +1,6 @@
 import type { GetStaticProps, NextPage } from "next";
-import Image from "next/image";
-import Head from "next/head";
-import { MainNav } from "@/components/MainNav";
-import { UserNav } from "@/components/UserNav";
 import { api } from "@/utils/api";
-import LoadingSpinner, { LoadingPage } from "@/components/loading";
+import { LoadingPage } from "@/components/loading";
 import { generateSSGHelper } from "@/server/helpers/ssgHelper";
 import {
   Card,

@@ -3,7 +3,7 @@ import { getAuth, buildClerkProps } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { api } from "@/utils/api";
 import { generateSSGHelper } from "@/server/helpers/ssgHelper";
-import { Activity, CreditCard, BedDouble, Users, Plus } from "lucide-react";
+import { BedDouble } from "lucide-react";
 import LoadingSpinner from "@/components/loading";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,9 +17,7 @@ import CurrentGuestsCard from "@/components/CurrentGuestsCard";
 import UpcomingReservationsCard from "@/components/UpcomingReservationsCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarDateRangePicker } from "@/components/ui/date-range-picker";
-import { MainNav } from "@/components/MainNav";
 import { Overview } from "@/components/Overview";
-import { UserNav } from "@/components/UserNav";
 import NewRoomModal from "@/components/NewRoomModal";
 import AdminLayout from "@/components/LayoutAdmin";
 import { RecentSales } from "@/components/RecentSales";

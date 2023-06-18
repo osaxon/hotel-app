@@ -1,33 +1,11 @@
-import type { GetStaticProps, NextPage } from "next";
-import Image from "next/image";
-import Head from "next/head";
-import { MainNav } from "@/components/MainNav";
-import { UserNav } from "@/components/UserNav";
-import { api } from "@/utils/api";
-import LoadingSpinner, { LoadingPage } from "@/components/loading";
-import { generateSSGHelper } from "@/server/helpers/ssgHelper";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
+import type { NextPage } from "next";
+
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { BedDouble } from "lucide-react";
-import NewRoomModal from "@/components/NewRoomModal";
 import AdminLayout from "@/components/LayoutAdmin";
 import { ReservationsTable } from "@/components/ReservationsTable";
 import { Button } from "@/components/ui/button";
 
 const BookingsPage: NextPage = () => {
-  const {
-    data: reservations,
-    isLoading,
-    isError,
-  } = api.reservations.getActiveReservations.useQuery();
-
   return (
     <>
       <AdminLayout>
@@ -47,18 +25,6 @@ const BookingsPage: NextPage = () => {
       </AdminLayout>
     </>
   );
-};
-
-export const getStaticProps: GetStaticProps = async () => {
-  const ssg = generateSSGHelper();
-
-  await ssg.reservations.getActiveReservations.prefetch();
-
-  return {
-    props: {
-      trcpState: ssg.dehydrate(),
-    },
-  };
 };
 
 export default BookingsPage;
