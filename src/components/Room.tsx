@@ -60,12 +60,7 @@ export default function Room(props: RoomProps) {
           <CollapsibleTrigger>
             Upcoming reservations: {reservations?.length || "0"}
           </CollapsibleTrigger>
-          <CollapsibleContent>
-            {reservations &&
-              reservations.map(({ guest, id }) => (
-                <span key={id}>{guest.username}</span>
-              ))}
-          </CollapsibleContent>
+          <CollapsibleContent></CollapsibleContent>
         </Collapsible>
       </CardContent>
     </Card>
