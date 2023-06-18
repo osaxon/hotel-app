@@ -24,8 +24,7 @@ import {
 } from "@/components/ui/popover";
 import { api } from "@/utils/api";
 
-import { Reservation } from "@prisma/client";
-import { Guest } from "@prisma/client";
+import { type Reservation } from "@prisma/client";
 import { LoadingPage } from "./loading";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
@@ -46,10 +45,6 @@ const FormSchema = z.object({
   checkOut: z.date(),
 });
 
-interface GuestData extends Guest {
-  fullName: string;
-}
-
 export default function NewBookingForm({}: { reservationData?: Reservation }) {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -64,8 +59,7 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
     isError: isGuestsError,
   } = api.guests.getAll.useQuery();
 
-  const { mutate, isLoading, isError } =
-    api.reservations.createReservation.useMutation();
+  const { mutate } = api.reservations.createReservation.useMutation();
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
     mutate(data);
@@ -84,10 +78,6 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
   }
 
   if (isLoadingGuests || isLoadingGuests) return <LoadingPage />;
-
-  const selectedGuest = guests.find(
-    (guest) => guest.fullName === form.getValues("customerName")
-  );
 
   return (
     <Form {...form}>

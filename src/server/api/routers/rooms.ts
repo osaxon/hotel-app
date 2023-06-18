@@ -1,47 +1,6 @@
-import { clerkClient } from "@clerk/nextjs/server";
-import type { User } from "@clerk/nextjs/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { v2 as cloudinary } from "cloudinary";
-import path from "path";
-import multer from "multer";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
-import {
-  createTRPCRouter,
-  publicProcedure,
-  privateProcedure,
-} from "@/server/api/trpc";
-import { env } from "@/env.mjs";
-import DataURIParser from "datauri/parser";
-import { Reservation, Room, RoomType } from "@prisma/client";
-
-interface CustomParams {
-  folder: string;
-  allowed_formats: string[];
-}
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: env.CLOUD_NAME,
-  api_key: env.CLOUD_API_KEY,
-  api_secret: env.CLOUD_API_SECRET,
-  secure: true,
-});
-
-// Create a storage engine for Multer
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: "hotel_admin", // Specify the folder where the images will be uploaded
-    resource_type: "auto",
-    allowed_formats: ["jpg", "jpeg", "png"], // Specify the allowed image formats
-  } as unknown as CustomParams,
-});
-
-// Create the Multer middleware
-const upload = multer({ storage });
-
-const parser = new DataURIParser();
+import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 
 export const roomsRouter = createTRPCRouter({
   // get all posts for feed

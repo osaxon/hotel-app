@@ -6,7 +6,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { PlusCircle } from "lucide-react";
-import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
@@ -16,24 +15,13 @@ import { toast } from "@/components/ui/use-toast";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useState } from "react";
-import { api } from "@/utils/api";
-import { CldUploadButton, CldUploadWidget } from "next-cloudinary";
-import { useStore } from "@/store/appStore";
-import LoadingSpinner from "./loading";
+
+// import { api } from "@/utils/api";
 
 const FormSchema = z.object({
   roomNumber: z.string().min(1, {
@@ -51,56 +39,43 @@ export default function NewRoomModal() {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
   });
-  const [modalOpen, setModalOpen] = useState(false);
-  const uploadedImgs = useStore((state) => state.uploadedImgs);
-  const setUploadedImgs = useStore((state) => state.setUploadedImgs);
 
-  const { mutate: addRoom } = api.rooms.createRoom.useMutation({
-    onSuccess: (data) => {
-      setModalOpen(false);
-      toast({
-        title: "You submitted the following values:",
-        description: (
-          <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-            <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-          </pre>
-        ),
-      });
-      setUploadedImgs([]);
-    },
-    onMutate: (variables) => {
-      setModalOpen(false);
-      toast({
-        title: "You submitted the following values:",
-        description: (
-          <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-            <code className="text-white">
-              {JSON.stringify(variables, null, 2)}
-            </code>
-          </pre>
-        ),
-      });
-    },
-    onError: (error) => {
-      setModalOpen(false);
-      toast({
-        title: "There's been an error:",
-        description: (
-          <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-            <code className="text-white">{JSON.stringify(error, null, 2)}</code>
-          </pre>
-        ),
-      });
-    },
-  });
+  //   const { mutate: addRoom } = api.rooms.createRoom.useMutation({
+  //     onSuccess: (data) => {
+  //       toast({
+  //         title: "You submitted the following values:",
+  //         description: (
+  //           <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+  //             <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+  //           </pre>
+  //         ),
+  //       });
+  //     },
+  //     onMutate: (variables) => {
+  //       toast({
+  //         title: "You submitted the following values:",
+  //         description: (
+  //           <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+  //             <code className="text-white">
+  //               {JSON.stringify(variables, null, 2)}
+  //             </code>
+  //           </pre>
+  //         ),
+  //       });
+  //     },
+  //     onError: (error) => {
+  //       toast({
+  //         title: "There's been an error:",
+  //         description: (
+  //           <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
+  //             <code className="text-white">{JSON.stringify(error, null, 2)}</code>
+  //           </pre>
+  //         ),
+  //       });
+  //     },
+  //   });
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const { image, ...rest } = data;
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    // addRoom({ ...data, image: image[0] });
-
     toast({
       title: "The data:",
       description: (
@@ -165,10 +140,6 @@ export default function NewRoomModal() {
             />
           </form>
         </Form>
-
-        <CldUploadButton uploadPreset="<Upload Preset>">
-          Upload to Cloudinary
-        </CldUploadButton>
 
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>

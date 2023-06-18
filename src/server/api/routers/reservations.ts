@@ -1,24 +1,11 @@
 import { clerkClient } from "@clerk/nextjs/server";
-import type { User } from "@clerk/nextjs/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import dayjs from "dayjs";
 
-import {
-  createTRPCRouter,
-  publicProcedure,
-  privateProcedure,
-} from "@/server/api/trpc";
+import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 
-import {
-  Reservation,
-  Room,
-  Prisma,
-  ReservationStatus,
-  Guest,
-  RoomStatus,
-  PaymentStatus,
-} from "@prisma/client";
+import { type Prisma, ReservationStatus, RoomStatus } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime";
 
 type ReservationWithRoom = Prisma.ReservationGetPayload<{
@@ -172,10 +159,6 @@ export const reservationsRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const fullName = input.customerName.split(" ");
-      const firstName = fullName[0]?.toString();
-      const surname = fullName[1]?.toString();
-
       const reservation = await ctx.prisma.reservation.update({
         where: { id: input.reservationId },
         data: {
@@ -203,6 +186,7 @@ export const reservationsRouter = createTRPCRouter({
           room: true,
         },
       });
+      return reservation;
     }),
 
   calculateSubTotal: publicProcedure
@@ -267,6 +251,7 @@ export const reservationsRouter = createTRPCRouter({
           room: true,
         },
       });
+      return reservation;
     }),
 
   getActiveReservations: publicProcedure.query(async ({ ctx }) => {

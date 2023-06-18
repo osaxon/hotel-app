@@ -36,7 +36,7 @@ const BookingsPage: NextPage = () => {
             <h2 className="text-3xl font-bold tracking-tight">Reservations</h2>
           </div>
           <div>
-            <Link href="/admin/bookings/new-booking">
+            <Link href="/bookings/new-booking">
               <Button>Add New</Button>
             </Link>
           </div>

@@ -9,18 +9,15 @@ import {
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 import { api } from "@/utils/api";
-import LoadingSpinner, { LoadingPage } from "./loading";
+import LoadingSpinner from "./loading";
 import { useRouter } from "next/router";
 dayjs.extend(isBetween);
 
 export function Overview() {
   const router = useRouter();
 
-  const {
-    data: reservations,
-    isLoading,
-    isError,
-  } = api.reservations.getActiveReservations.useQuery();
+  const { data: reservations, isLoading } =
+    api.reservations.getActiveReservations.useQuery();
 
   if (isLoading) return <LoadingSpinner />;
   if (!reservations) return <>No data</>;
@@ -60,7 +57,7 @@ export function Overview() {
           dataKey="total"
           fill="#adfa1d"
           radius={[4, 4, 0, 0]}
-          onClick={(data: any, i: number) => router.replace(`/admin/bookings/`)}
+          onClick={(_data: unknown, _i: number) => router.replace(`/bookings/`)}
         />
       </BarChart>
     </ResponsiveContainer>

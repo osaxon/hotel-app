@@ -1,15 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useRouter } from "next/router";
-import { Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -24,9 +21,7 @@ import {
 } from "@/components/ui/popover";
 import { api } from "@/utils/api";
 
-import { Prisma, Reservation } from "@prisma/client";
-import { Guest } from "@prisma/client";
-import { LoadingPage } from "./loading";
+import { type Prisma } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
@@ -38,10 +33,6 @@ const FormSchema = z.object({
   checkIn: z.date(),
   checkOut: z.date(),
 });
-
-interface GuestData extends Guest {
-  fullName: string;
-}
 
 type ReservationWithRoom = Prisma.ReservationGetPayload<{
   include: { room: true };

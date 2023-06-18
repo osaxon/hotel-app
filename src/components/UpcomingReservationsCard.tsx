@@ -1,23 +1,14 @@
 import { BedDouble } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
-import { Reservation } from "@prisma/client";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { type Reservation } from "@prisma/client";
 import dayjs from "dayjs";
 import { api } from "@/utils/api";
 import LoadingSpinner from "./loading";
 import { CardSkeleton } from "./CardSkeleton";
 
 export default function UpcomingReservationsCard() {
-  const {
-    data: reservations,
-    isLoading,
-    isError,
-  } = api.reservations.getActiveReservations.useQuery();
+  const { data: reservations, isLoading } =
+    api.reservations.getActiveReservations.useQuery();
 
   if (!reservations) return <CardSkeleton />;
   if (isLoading) return <LoadingSpinner />;

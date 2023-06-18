@@ -4,8 +4,7 @@ import { useCallback, useState } from "react";
 
 import type { FileWithPath } from "react-dropzone";
 import { generateClientDropzoneAccept } from "uploadthing/client";
-import type { DANGEROUS__uploadFiles } from "uploadthing/client";
-import type { ExpandedRouteConfig, FileRouter } from "uploadthing/server";
+import type { ExpandedRouteConfig } from "uploadthing/server";
 
 const generatePermittedFileTypes = (config?: ExpandedRouteConfig) => {
   const fileTypes = config ? Object.keys(config) : [];
@@ -33,9 +32,7 @@ export function UploadThing() {
     },
   });
 
-  const { fileTypes, multiple } = generatePermittedFileTypes(
-    permittedFileInfo?.config
-  );
+  const { fileTypes } = generatePermittedFileTypes(permittedFileInfo?.config);
 
   const { getRootProps, getInputProps } = useDropzone({
     onDrop,

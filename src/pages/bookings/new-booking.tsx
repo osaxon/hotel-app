@@ -1,4 +1,3 @@
-import { api } from "@/utils/api";
 import NewBookingForm from "@/components/NewBookingForm";
 import AdminLayout from "@/components/LayoutAdmin";
 

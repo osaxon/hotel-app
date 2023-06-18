@@ -20,22 +20,6 @@ import { FileText, Download } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import InvoiceTablePDF from "@/components/InvoiceTablePDF";
 import { useState } from "react";
-import { Prisma } from "@prisma/client";
-
-type ReservationWithNestedData = Prisma.ReservationGetPayload<{
-  include: {
-    room: true;
-    orders: {
-      include: {
-        items: {
-          include: {
-            item: true;
-          };
-        };
-      };
-    };
-  };
-}>;
 
 const CheckOutPage: NextPage = () => {
   const [showPDF, setShowPDF] = useState<boolean>(false);
@@ -44,11 +28,7 @@ const CheckOutPage: NextPage = () => {
 
   const reservationId = id as string;
 
-  const {
-    data: reservation,
-    isLoading,
-    isError,
-  } = api.reservations.getByID.useQuery(
+  const { data: reservation, isLoading } = api.reservations.getByID.useQuery(
     { id: reservationId },
     { staleTime: Infinity }
   );
@@ -93,7 +73,7 @@ const CheckOutPage: NextPage = () => {
                 document={<InvoiceTablePDF reservation={reservation} />}
                 fileName="checkout.pdf"
               >
-                {({ blob, url, loading, error }) =>
+                {({ loading }) =>
                   loading ? (
                     <LoadingSpinner size={48} />
                   ) : (

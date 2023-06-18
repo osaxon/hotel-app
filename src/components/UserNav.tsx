@@ -1,6 +1,4 @@
-import { CreditCard, LogOut, PlusCircle, Settings, User } from "lucide-react";
-import Link from "next/link";
-import { api } from "@/utils/api";
+import { LogOut, Settings, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,10 +11,18 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SignInButton, useUser } from "@clerk/nextjs";
+
+import { useUser, SignOutButton } from "@clerk/nextjs";
+import { useRouter } from "next/router";
 
 export function UserNav() {
   const user = useUser();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await router.replace("/"); // Replace with the desired URL
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -34,7 +40,7 @@ export function UserNav() {
               {user.user?.fullName}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
-              m@example.com
+              {user.user?.primaryEmailAddress?.emailAddress}
             </p>
           </div>
         </DropdownMenuLabel>
@@ -46,24 +52,15 @@ export function UserNav() {
             <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <CreditCard className="mr-2 h-4 w-4" />
-            <Link href="/organization-profile/">Manage Organisation</Link>
-            <DropdownMenuShortcut>⌘O</DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem>
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
             <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            <span>New Team</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
+          <SignOutButton signOutCallback={handleSignOut} />
           <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
         </DropdownMenuItem>
       </DropdownMenuContent>

@@ -5,19 +5,19 @@ import { cn } from "@/lib/utils";
 const routes = [
   {
     label: "Overview",
-    href: "/admin/dashboard",
+    href: "/dashboard",
   },
   {
     label: "Rooms",
-    href: "/admin/room",
+    href: "/room",
   },
   {
     label: "Bookings",
-    href: "/admin/bookings",
+    href: "/bookings",
   },
   {
     label: "Orders",
-    href: "/admin/orders",
+    href: "/orders",
   },
 ];
 

@@ -1,5 +1,5 @@
-import { ClassValue, clsx } from "clsx";
-import dayjs, { Dayjs } from "dayjs";
+import { type ClassValue, clsx } from "clsx";
+import dayjs, { type Dayjs } from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 import { twMerge } from "tailwind-merge";
 

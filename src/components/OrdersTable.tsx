@@ -25,10 +25,7 @@ export const columns: ColumnDef<Order>[] = [
     cell: ({ row }) => {
       const orderID: string = row.getValue("id");
       return (
-        <Link
-          href={`/admin/orders/${orderID}`}
-          className="w-10 uppercase underline"
-        >
+        <Link href={`/orders/${orderID}`} className="w-10 uppercase underline">
           {orderID}
         </Link>
       );

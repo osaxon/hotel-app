@@ -1,40 +1,7 @@
-import { clerkClient } from "@clerk/nextjs/server";
-import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import {
-  createTRPCRouter,
-  publicProcedure,
-  privateProcedure,
-} from "@/server/api/trpc";
-import { env } from "@/env.mjs";
-import type { Order, Item, ItemOrders } from "@prisma/client";
+import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { Prisma } from "@prisma/client";
 import { isHappyHour } from "@/lib/utils";
-
-const addUserDataToOrder = async (orders: Order[]) => {
-  const users = await clerkClient.users.getUserList({
-    userId: orders.map((order) => order.userId ?? ""),
-    limit: 100,
-  });
-
-  return orders.map((order) => {
-    const customer = users.find((user) => user.id === order.userId);
-    if (!customer)
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "No author found",
-      });
-
-    return {
-      ...order,
-      // Causes ESLint Type error if just author object returned. Error fixed by returning this way
-      customer: {
-        ...customer,
-        username: customer.username,
-      },
-    };
-  });
-};
 
 function getSubTotal(
   items: { priceUSD: Prisma.Decimal; quantity: number }[]
@@ -61,15 +28,6 @@ const createOrderInputSchema = z.object({
   ),
   reservationId: z.string().optional(),
   guestId: z.string().optional(),
-});
-
-// Define the response schema using Zod
-const createOrderResponseSchema = z.object({
-  orderId: z.string(),
-  customer: z.object({
-    id: z.string(),
-    username: z.string(),
-  }),
 });
 
 export const posRouter = createTRPCRouter({

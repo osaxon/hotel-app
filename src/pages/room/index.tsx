@@ -40,7 +40,7 @@ const RoomAdminPage: NextPage = () => {
           <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {rooms &&
               rooms.map((room) => (
-                <Link key={room.id} href={`/admin/room/${room.id}`}>
+                <Link key={room.id} href={`/room/${room.id}`}>
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="flex flex-col">

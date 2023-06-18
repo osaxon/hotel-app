@@ -1,15 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useRouter } from "next/router";
-import { Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -29,16 +26,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { api } from "@/utils/api";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
-import Link from "next/link";
-import { Reservation } from "@prisma/client";
-import { Guest } from "@prisma/client";
+import { type Reservation } from "@prisma/client";
 import { LoadingPage } from "./loading";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
@@ -53,10 +41,6 @@ const FormSchema = z.object({
   checkIn: z.date(),
   checkOut: z.date(),
 });
-
-interface GuestData extends Guest {
-  fullName: string;
-}
 
 export default function CheckInForm({
   reservationData,
@@ -76,17 +60,8 @@ export default function CheckInForm({
     },
   });
 
-  const {
-    data: rooms,
-    isLoading: isLoadingRooms,
-    isError: isRoomsError,
-  } = api.rooms.getVacanctRooms.useQuery();
-
-  const {
-    data: guests,
-    isLoading: isLoadingGuests,
-    isError: isGuestsError,
-  } = api.guests.getAll.useQuery();
+  const { data: rooms, isLoading: isLoadingRooms } =
+    api.rooms.getVacanctRooms.useQuery();
 
   const { mutate: checkIn } = api.reservations.checkIn.useMutation();
 
@@ -108,81 +83,11 @@ export default function CheckInForm({
     });
   }
 
-  if (isGuestsError) {
-    return <div>Error retrieving guest data.</div>;
-  }
-
-  if (isLoadingRooms || isLoadingGuests || isLoadingGuests)
-    return <LoadingPage />;
-
-  const selectedGuest = guests.find(
-    (guest) => guest.fullName === form.getValues("customerName")
-  );
+  if (isLoadingRooms) return <LoadingPage />;
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="w-2/3 space-y-6">
-        {/* <FormField
-          control={form.control}
-          name="customerName"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Guest</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className={cn(
-                        "w-[300px] justify-between",
-                        !field.value && "text-muted-foreground"
-                      )}
-                      defaultValue={reservation?.customerName}
-                    >
-                      {field.value
-                        ? guests &&
-                          guests.find((guest) => guest.fullName === field.value)
-                            ?.fullName
-                        : reservation?.customerName}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0">
-                  <Command>
-                    <CommandInput placeholder="Search existing guests..." />
-                    <CommandEmpty>No guest found.</CommandEmpty>
-                    <CommandGroup>
-                      {guests.map((guest) => (
-                        <CommandItem
-                          value={guest.fullName ?? reservation?.customerName}
-                          defaultValue={reservation?.customerName}
-                          key={guest.fullName}
-                          onSelect={(value) => {
-                            form.setValue("customerName", value);
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              guest.fullName === field.value
-                                ? "opacity-100"
-                                : "opacity-0"
-                            )}
-                          />
-                          {reservation?.customerName}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-
-              <FormMessage />
-            </FormItem>
-          )}
-        /> */}
         <FormField
           control={form.control}
           name="firstName"

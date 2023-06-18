@@ -1,7 +1,7 @@
 import { api } from "@/utils/api";
 import DataTable from "./DataTable";
-import { Reservation, Prisma, ReservationStatus } from "@prisma/client";
-import { ColumnDef } from "@tanstack/react-table";
+import { type Reservation } from "@prisma/client";
+import { type ColumnDef } from "@tanstack/react-table";
 import { Badge } from "./ui/badge";
 import Link from "next/link";
 import { Button } from "./ui/button";
@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LoadingPage } from "./loading";
 import dayjs from "dayjs";
-import { format } from "date-fns";
 
 export const columns: ColumnDef<Reservation>[] = [
   {
@@ -29,7 +28,7 @@ export const columns: ColumnDef<Reservation>[] = [
       const reservationID: string = row.getValue("id");
       return (
         <Link
-          href={`/admin/reservations/${reservationID}`}
+          href={`/reservations/${reservationID}`}
           className="w-10 uppercase underline"
         >
           {reservationID}
@@ -120,7 +119,6 @@ export const columns: ColumnDef<Reservation>[] = [
   {
     id: "actions",
     cell: ({ row }) => {
-      const order = row.original;
       const status = row.getValue("status");
       const id: string = row.getValue("id");
 
@@ -154,11 +152,8 @@ export const columns: ColumnDef<Reservation>[] = [
 ];
 
 export function ReservationsTable() {
-  const {
-    data: reservations,
-    isError,
-    isLoading,
-  } = api.reservations.getActiveReservations.useQuery();
+  const { data: reservations, isLoading } =
+    api.reservations.getActiveReservations.useQuery();
 
   if (isLoading) return <LoadingPage />;
   if (!reservations) return null;

@@ -1,6 +1,6 @@
 import { BedDouble } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Reservation, Prisma } from "@prisma/client";
+import { type Prisma } from "@prisma/client";
 
 import { api } from "@/utils/api";
 import LoadingSpinner from "./loading";
@@ -11,11 +11,8 @@ type ReservationWithRoom = Prisma.ReservationGetPayload<{
 }>;
 
 export default function CurrentGuestsCard() {
-  const {
-    data: reservations,
-    isLoading,
-    isError,
-  } = api.reservations.getActiveReservations.useQuery();
+  const { data: reservations, isLoading } =
+    api.reservations.getActiveReservations.useQuery();
 
   if (!reservations) return <CardSkeleton />;
   if (isLoading) return <LoadingSpinner />;
