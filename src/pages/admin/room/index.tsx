@@ -48,7 +48,7 @@ const RoomAdminPage: NextPage = () => {
                       </CardTitle>
 
                       <CardDescription>
-                        <Badge>{room.roomType.name}</Badge>
+                        <Badge>{room.roomType}</Badge>
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-y-4">
