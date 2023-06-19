@@ -1,7 +1,12 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
-import { Prisma } from "@prisma/client";
+import {
+  createTRPCRouter,
+  privateProcedure,
+  publicProcedure,
+} from "@/server/api/trpc";
+import { ItemCategory, OrderStatus, Prisma } from "@prisma/client";
 import { isHappyHour } from "@/lib/utils";
+import { Decimal } from "@prisma/client/runtime";
 
 function getSubTotal(
   items: { priceUSD: Prisma.Decimal; quantity: number }[]
@@ -14,6 +19,13 @@ function getSubTotal(
   const subTotal = items.reduce(fn, 0);
   return subTotal.toFixed(2); // Return the sub-total as a string with 2 decimal places
 }
+
+export const addItemInputSchema = z.object({
+  name: z.string(),
+  priceUSD: z.number().positive(),
+  happyHourPriceUSD: z.number().positive().optional(),
+  category: z.nativeEnum(ItemCategory),
+});
 
 // Define the input schema using Zod
 const createOrderInputSchema = z.object({
@@ -35,6 +47,7 @@ export const posRouter = createTRPCRouter({
     const orders = await ctx.prisma.order.findMany({
       include: {
         items: true,
+        guest: true,
       },
     });
 
@@ -69,6 +82,23 @@ export const posRouter = createTRPCRouter({
 
     return items;
   }),
+
+  addItem: privateProcedure
+    .input(addItemInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const validatedInput = addItemInputSchema.parse(input);
+
+      const item = await ctx.prisma.item.create({
+        data: {
+          happyHourPriceUSD: new Decimal(
+            validatedInput.happyHourPriceUSD ?? validatedInput.priceUSD
+          ),
+          ...validatedInput,
+        },
+      });
+
+      return item;
+    }),
 
   createOrder: publicProcedure
     .input(createOrderInputSchema)
@@ -143,5 +173,17 @@ export const posRouter = createTRPCRouter({
         });
       }
       return order;
+    }),
+
+  markAsPaid: privateProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const updatedItem = await ctx.prisma.order.update({
+        where: { id: input.id },
+        data: {
+          status: OrderStatus.PAID,
+        },
+      });
+      return updatedItem;
     }),
 });

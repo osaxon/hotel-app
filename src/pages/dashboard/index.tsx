@@ -18,7 +18,6 @@ import UpcomingReservationsCard from "@/components/UpcomingReservationsCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarDateRangePicker } from "@/components/ui/date-range-picker";
 import { Overview } from "@/components/Overview";
-import NewRoomModal from "@/components/NewRoomModal";
 import AdminLayout from "@/components/LayoutAdmin";
 import { RecentSales } from "@/components/RecentSales";
 
@@ -109,12 +108,6 @@ export default function DashboardPage() {
                     <LoadingSpinner />
                   </Card>
                 )}
-
-                <Card className="border border-dashed">
-                  <CardContent className="flex h-full flex-col items-center justify-center p-0 py-10">
-                    <NewRoomModal />
-                  </CardContent>
-                </Card>
               </div>
             </TabsContent>
           </Tabs>

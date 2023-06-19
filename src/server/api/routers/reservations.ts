@@ -263,6 +263,7 @@ export const reservationsRouter = createTRPCRouter({
       },
       include: {
         room: true,
+        guest: true,
       },
     });
     return reservations;

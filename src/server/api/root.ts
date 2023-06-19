@@ -14,6 +14,7 @@ export const appRouter = createTRPCRouter({
   reservations: reservationsRouter,
   pos: posRouter,
   guests: guestsRouter,
+  markAsPaid: posRouter.markAsPaid,
 });
 
 // export type definition of API

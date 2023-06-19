@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from "react";
 import dayjs from "dayjs";
 import { api } from "@/utils/api";
-import { LoadingPage } from "@/components/loading";
+import LoadingSpinner, { LoadingPage } from "@/components/loading";
 import {
   Form,
   FormControl,
@@ -64,10 +64,11 @@ export default function OrdersPage() {
   const { data: items, isLoading: isLoadingItems } =
     api.pos.getItems.useQuery();
 
-  const { data: guests } = api.guests.getAll.useQuery(undefined, {
-    staleTime: 5000,
-    refetchOnWindowFocus: true,
-  });
+  const { data: guests, isLoading: isLoadingGuests } =
+    api.guests.getAll.useQuery(undefined, {
+      staleTime: 5000,
+      refetchOnWindowFocus: true,
+    });
 
   const { mutate: createOrder, isLoading: isAddingOrder } =
     api.pos.createOrder.useMutation({});
@@ -118,6 +119,8 @@ export default function OrdersPage() {
     createOrder(orderPayload);
   }
 
+  if (isLoadingItems || isLoadingGuests) return <LoadingPage />;
+
   return (
     <AdminLayout>
       {isAddingOrder ? (
@@ -142,7 +145,7 @@ export default function OrdersPage() {
 
               {/* ITEM SELECTION GRID */}
               {isLoadingItems ? (
-                <LoadingPage />
+                <LoadingSpinner size={64} />
               ) : (
                 items && (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

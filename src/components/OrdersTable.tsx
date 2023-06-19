@@ -2,12 +2,12 @@ import { api } from "@/utils/api";
 import DataTable from "./DataTable";
 import { type Order } from "@prisma/client";
 import { type ColumnDef } from "@tanstack/react-table";
+import { useState } from "react";
 import { Badge } from "./ui/badge";
 import Link from "next/link";
 import { Button } from "./ui/button";
 import { ArrowUpDown } from "lucide-react";
 import { MoreHorizontal } from "lucide-react";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,8 +25,8 @@ export const columns: ColumnDef<Order>[] = [
     cell: ({ row }) => {
       const orderID: string = row.getValue("id");
       return (
-        <Link href={`/orders/${orderID}`} className="w-10 uppercase underline">
-          {orderID}
+        <Link href={`/orders/${orderID}`} className="uppercase underline">
+          {orderID.slice(0, 10)}...
         </Link>
       );
     },
@@ -35,10 +35,10 @@ export const columns: ColumnDef<Order>[] = [
     accessorKey: "customerName",
     header: "Name",
   },
-  {
-    accessorKey: "customerEmail",
-    header: "Customer Email",
-  },
+  //   {
+  //     accessorKey: "guest.email",
+  //     header: "Customer Email",
+  //   },
   {
     accessorKey: "status",
     header: ({ column }) => {
@@ -54,9 +54,13 @@ export const columns: ColumnDef<Order>[] = [
     },
     cell: ({ row }) => {
       const status: string = row.getValue("status");
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      const [updatedStatus, setUpdatedStatus] = useState<string>();
+
       return (
         <Badge
           className="ml-4"
+          onClick={() => setUpdatedStatus("PAID")}
           variant={status === "UNPAID" ? "destructive" : "default"}
         >
           {status}
@@ -93,6 +97,8 @@ export const columns: ColumnDef<Order>[] = [
     id: "actions",
     cell: ({ row }) => {
       const order = row.original;
+      const name: string = row.original.customerName ?? "";
+      const orderId: string = row.original.id;
 
       return (
         <DropdownMenu>
@@ -104,13 +110,18 @@ export const columns: ColumnDef<Order>[] = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
+            {/* <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(order.id)}
             >
               Copy Order ID
+            </DropdownMenuItem> */}
+            <DropdownMenuItem>
+              <Link href={`/orders/guests/${encodeURIComponent(name)}`}>
+                View all for {name}
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Print Invoice</DropdownMenuItem>
+            <DropdownMenuItem>Mark as Paid</DropdownMenuItem>
             <DropdownMenuItem>View Order Details</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

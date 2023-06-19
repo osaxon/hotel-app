@@ -13,7 +13,7 @@ export default function AdminLayout(props: PropsWithChildren) {
           </div>
         </div>
       </div>
-      <main className="mx-auto w-full max-w-7xl">{props.children}</main>
+      <main>{props.children}</main>
     </div>
   );
 }

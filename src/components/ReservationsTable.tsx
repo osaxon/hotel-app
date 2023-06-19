@@ -8,7 +8,6 @@ import { Button } from "./ui/button";
 import { ArrowUpDown } from "lucide-react";
 import { MoreHorizontal } from "lucide-react";
 import { convertToNormalCase } from "@/lib/utils";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,7 +30,7 @@ export const columns: ColumnDef<Reservation>[] = [
           href={`/reservations/${reservationID}`}
           className="w-10 uppercase underline"
         >
-          {reservationID}
+          ...{reservationID.slice(-8)}
         </Link>
       );
     },
@@ -78,7 +77,7 @@ export const columns: ColumnDef<Reservation>[] = [
     header: "Name",
   },
   {
-    accessorKey: "customerEmail",
+    accessorKey: "guest.email",
     header: "Email",
   },
   {

@@ -1,5 +1,6 @@
 import NewBookingForm from "@/components/NewBookingForm";
 import AdminLayout from "@/components/LayoutAdmin";
+import { GuestsTable } from "@/components/GuestsTable";
 
 export default function NewBookingPage() {
   return (
@@ -11,7 +12,7 @@ export default function NewBookingPage() {
         <div>
           <p>Complete this to create a new reservation.</p>
         </div>
-        <section className="flex w-full">
+        <section className="flex w-full flex-col">
           <NewBookingForm />
         </section>
       </section>

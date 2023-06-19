@@ -36,22 +36,21 @@ import {
   CommandInput,
   CommandItem,
 } from "./ui/command";
+import { GuestsTable } from "./GuestsTable";
+import { useState } from "react";
 
 const FormSchema = z.object({
   customerName: z.string(),
   customerEmail: z.string().email(),
   returningGuest: z.boolean().default(false),
+  guestId: z.string().optional(),
   checkIn: z.date(),
   checkOut: z.date(),
 });
 
 export default function NewBookingForm({}: { reservationData?: Reservation }) {
-  const form = useForm<z.infer<typeof FormSchema>>({
-    resolver: zodResolver(FormSchema),
-    defaultValues: {
-      returningGuest: false,
-    },
-  });
+  const [runGuestQuery, setRunGuestQuery] = useState<boolean>(false);
+  const [selectedGuest, setSelectedGuest] = useState<string>("");
 
   const {
     data: guests,
@@ -61,8 +60,28 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
 
   const { mutate } = api.reservations.createReservation.useMutation();
 
+  const { data: guestData, remove } = api.guests.getById.useQuery(
+    {
+      id: selectedGuest,
+    },
+    {
+      enabled: runGuestQuery,
+      onSuccess: (data) => {
+        form.setValue("customerName", data?.fullName ?? "");
+        form.setValue("customerEmail", data?.email ?? "");
+      },
+    }
+  );
+
+  const form = useForm<z.infer<typeof FormSchema>>({
+    resolver: zodResolver(FormSchema),
+    defaultValues: {
+      returningGuest: false,
+    },
+  });
+
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    mutate(data);
+    // mutate(data);
     toast({
       title: "The data:",
       description: (
@@ -102,13 +121,12 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
             </FormItem>
           )}
         />
-
-        <FormField
-          control={form.control}
-          name="customerName"
-          render={({ field }) => {
-            if (form.getValues("returningGuest")) {
-              return (
+        {form.getValues("returningGuest") ? (
+          <>
+            <FormField
+              control={form.control}
+              name="guestId"
+              render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Guest</FormLabel>
                   <Popover>
@@ -118,78 +136,116 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
                           variant="outline"
                           role="combobox"
                           className={cn(
-                            "w-[250px] justify-between",
+                            "w-[200px] justify-between",
                             !field.value && "text-muted-foreground"
                           )}
                         >
                           {field.value
-                            ? guests.find(
-                                (guest) => guest.fullName === field.value
-                              )?.fullName
-                            : "Select guest"}
+                            ? guests.find((guest) => guest.id === field.value)
+                                ?.fullName
+                            : "Select Guest"}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-
-                    <PopoverContent className="w-[250px] p-0">
+                    <PopoverContent className="w-[200px] p-0">
                       <Command>
-                        <CommandInput placeholder="Search guest..." />
-                        <CommandEmpty>No guests found.</CommandEmpty>
+                        <CommandInput placeholder="Search framework..." />
+                        <CommandEmpty>No framework found.</CommandEmpty>
                         <CommandGroup>
-                          {guests.map((guest) => (
-                            <CommandItem
-                              value={guest.fullName ?? ""}
-                              key={guest.id}
-                              onSelect={(value) => {
-                                form.setValue("customerName", value);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  guest.fullName === field.value
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              {guest.fullName ?? ""}
-                            </CommandItem>
-                          ))}
+                          {guests.map((guest) => {
+                            const fullName = `${guest.firstName} ${guest.surname}`;
+                            return (
+                              <CommandItem
+                                value={guest.id}
+                                key={guest.id}
+                                onSelect={(value) => {
+                                  form.setValue("guestId", value);
+                                  setSelectedGuest(value);
+                                  setRunGuestQuery(true);
+                                }}
+                              >
+                                {guest.fullName}
+                              </CommandItem>
+                            );
+                          })}
                         </CommandGroup>
                       </Command>
                     </PopoverContent>
                   </Popover>
                   <FormMessage />
                 </FormItem>
-              );
-            } else {
-              return (
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="customerName"
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>Guest Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        defaultValue={guestData?.fullName ?? field.value}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+
+            <FormField
+              control={form.control}
+              name="customerEmail"
+              render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Guest Name</FormLabel>
+                  <FormLabel>Guest Email</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      defaultValue={guestData?.email ?? field.value}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
+        ) : (
+          <>
+            <FormField
+              control={form.control}
+              name="customerName"
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>Guest Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+
+            <FormField
+              control={form.control}
+              name="customerEmail"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Guest Email</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
-              );
-            }
-          }}
-        />
-
-        <FormField
-          control={form.control}
-          name="customerEmail"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Guest Email</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+              )}
+            />
+          </>
+        )}
 
         <FormField
           control={form.control}
@@ -279,7 +335,20 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
             </FormItem>
           )}
         />
-        <Button type="submit">Submit</Button>
+        <div className="flex gap-4">
+          <Button type="submit">Submit</Button>
+          <Button
+            variant="destructive"
+            type="reset"
+            onClick={() => {
+              form.reset();
+              setSelectedGuest("");
+              setRunGuestQuery(false);
+            }}
+          >
+            Reset
+          </Button>
+        </div>
       </form>
     </Form>
   );

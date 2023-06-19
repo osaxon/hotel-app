@@ -25,14 +25,19 @@ import { Input } from "./ui/input";
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  displayFilter?: boolean;
+  filterColumn?: string;
 }
 
 export default function DataTable<TData, TValue>({
   data,
   columns,
+  displayFilter = true,
+  filterColumn = "customerName",
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [rowSelection, setRowSelection] = useState({});
   const table = useReactTable({
     data,
     columns,
@@ -42,26 +47,31 @@ export default function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
+    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
       columnFilters,
+      rowSelection,
     },
   });
 
   return (
     <div>
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Filter customer..."
-          value={
-            (table.getColumn("customerName")?.getFilterValue() as string) ?? ""
-          }
-          onChange={(event) =>
-            table.getColumn("customerName")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-      </div>
+      {displayFilter && (
+        <div className="flex items-center py-4">
+          <Input
+            placeholder="Filter customer..."
+            value={
+              (table.getColumn(filterColumn)?.getFilterValue() as string) ?? ""
+            }
+            onChange={(event) =>
+              table.getColumn(filterColumn)?.setFilterValue(event.target.value)
+            }
+            className="max-w-sm"
+          />
+        </div>
+      )}
+      {JSON.stringify(table.getFilteredSelectedRowModel().rows[0]?.original)}
       <div className="rounded-md border">
         <Table>
           <TableHeader>

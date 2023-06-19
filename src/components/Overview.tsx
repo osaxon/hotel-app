@@ -23,15 +23,16 @@ export function Overview() {
   if (!reservations) return <>No data</>;
 
   const data = Array.from({ length: 6 }, (_, index) => {
-    const month = dayjs().add(index, "month");
-    const reservationsInMonth = reservations.filter((reservation) =>
-      dayjs(reservation.checkIn).isSame(month, "month")
+    const weekStart = dayjs().startOf("week").add(index, "week");
+    const weekEnd = dayjs().endOf("week").add(index, "week");
+    const reservationsInWeek = reservations.filter((reservation) =>
+      dayjs(reservation.checkIn).isBetween(weekStart, weekEnd, null, "[]")
     );
-    const totalReservationsInMonth = reservationsInMonth.length;
+    const totalReservationsInWeek = reservationsInWeek.length;
 
     return {
-      name: month.format("MMM"),
-      total: totalReservationsInMonth,
+      name: weekStart.format("MMM DD"),
+      total: totalReservationsInWeek,
     };
   });
 
