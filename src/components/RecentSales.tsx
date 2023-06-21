@@ -1,8 +1,8 @@
 import { api } from "@/utils/api";
-import Link from "next/link";
 import dayjs from "dayjs";
-import LoadingSpinner from "./loading";
 import { BeerIcon } from "lucide-react";
+import Link from "next/link";
+import LoadingSpinner from "./loading";
 
 export function RecentSales() {
   const { data: orders, isLoading } = api.pos.getLastDay.useQuery();
@@ -22,7 +22,7 @@ export function RecentSales() {
                 href={`/orders/${order.id}`}
                 className="text-sm font-medium leading-none"
               >
-                {order.customerName}
+                {order.name}
               </Link>
               {order.items.map((itemOrder) => (
                 <p key={itemOrder.id} className="text-sm text-muted-foreground">

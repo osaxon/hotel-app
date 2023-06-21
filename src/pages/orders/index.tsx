@@ -1,10 +1,11 @@
-import AdminLayout from "@/components/LayoutAdmin";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { type GetStaticProps } from "next";
 import { useState } from "react";
-import dayjs from "dayjs";
-import { api } from "@/utils/api";
+
+import AdminLayout from "@/components/LayoutAdmin";
+import { OrdersTable } from "@/components/OrdersTable";
 import LoadingSpinner, { LoadingPage } from "@/components/loading";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -13,16 +14,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
-import { cn, convertToNormalCase, isHappyHour } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { type Item } from "@prisma/client";
-import { generateSSGHelper } from "@/server/helpers/ssgHelper";
-import { OrdersTable } from "@/components/OrdersTable";
 import {
   Table,
   TableBody,
@@ -31,7 +23,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { type GetStaticProps } from "next";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "@/components/ui/use-toast";
+import { cn, convertToNormalCase, isHappyHour } from "@/lib/utils";
+import { generateSSGHelper } from "@/server/helpers/ssgHelper";
+import { api } from "@/utils/api";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { type Item } from "@prisma/client";
+import dayjs from "dayjs";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 type SelectedItem = {
   itemName: string;
@@ -49,7 +50,7 @@ type SelectedCustomer = {
 
 const FormSchema = z.object({
   room: z.string().optional(),
-  customerName: z.string().optional(),
+  name: z.string().optional(),
   reservationId: z.string().optional(),
   guestId: z.string().optional(),
 });
@@ -232,7 +233,7 @@ export default function OrdersPage() {
                                 guestId: filteredGuest.id,
                               });
                               form.setValue(
-                                "customerName",
+                                "name",
                                 filteredGuest.firstName +
                                   " " +
                                   filteredGuest.surname
@@ -297,7 +298,7 @@ export default function OrdersPage() {
                   >
                     <FormField
                       control={form.control}
-                      name="customerName"
+                      name="name"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xl font-bold">

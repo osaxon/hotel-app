@@ -1,8 +1,8 @@
-import type { GetStaticProps, NextPage } from "next";
-import { api } from "@/utils/api";
+import AdminLayout from "@/components/LayoutAdmin";
 import { LoadingPage } from "@/components/loading";
 import { generateSSGHelper } from "@/server/helpers/ssgHelper";
-import AdminLayout from "@/components/LayoutAdmin";
+import { api } from "@/utils/api";
+import type { GetStaticProps, NextPage } from "next";
 
 const SingleRoomAdminPage: NextPage<{ id: string }> = ({ id }) => {
   const { data, isLoading } = api.rooms.getById.useQuery({

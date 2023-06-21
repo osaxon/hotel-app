@@ -56,11 +56,11 @@ export const reservationsRouter = createTRPCRouter({
   createReservation: publicProcedure
     .input(
       z.object({
-        customerName: z.string(),
+        guestName: z.string(),
         checkIn: z.date(),
         checkOut: z.date(),
         guestId: z.string().optional(),
-        customerEmail: z.string(),
+        guestEmail: z.string().email(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -68,13 +68,13 @@ export const reservationsRouter = createTRPCRouter({
       if (input.guestId) {
         reservation = await ctx.prisma.reservation.create({
           data: {
-            customerName: input.customerName,
+            guestName: input.guestName,
             checkIn: input.checkIn,
             checkOut: input.checkOut,
             guest: {
               connect: { id: input.guestId },
             },
-            customerEmail: input.customerEmail,
+            guestEmail: input.guestEmail,
           },
           include: {
             room: true,
@@ -84,10 +84,10 @@ export const reservationsRouter = createTRPCRouter({
       } else {
         reservation = await ctx.prisma.reservation.create({
           data: {
-            customerName: input.customerName,
+            guestName: input.guestName,
             checkIn: input.checkIn,
             checkOut: input.checkOut,
-            customerEmail: input.customerEmail,
+            guestEmail: input.guestEmail,
           },
           include: {
             room: true,
@@ -151,10 +151,10 @@ export const reservationsRouter = createTRPCRouter({
     .input(
       z.object({
         reservationId: z.string(),
-        customerName: z.string(),
+        guestName: z.string(),
         firstName: z.string(),
         surname: z.string(),
-        customerEmail: z.string().email(),
+        guestEmail: z.string().email(),
         roomId: z.string(),
       })
     )
@@ -166,7 +166,7 @@ export const reservationsRouter = createTRPCRouter({
 
           guest: {
             create: {
-              email: input.customerEmail,
+              email: input.guestEmail,
               firstName: input.firstName,
               surname: input.surname,
               currentReservationId: input.reservationId,

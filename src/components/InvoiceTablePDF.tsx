@@ -1,6 +1,5 @@
-import React from "react";
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { type Prisma } from "@prisma/client";
+import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import dayjs from "dayjs";
 
 type ReservationWithNestedData = Prisma.ReservationGetPayload<{

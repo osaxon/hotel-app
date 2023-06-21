@@ -1,9 +1,5 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { toast } from "@/components/ui/use-toast";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Form,
   FormControl,
@@ -12,6 +8,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -19,24 +21,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { api } from "@/utils/api";
-import { type Reservation } from "@prisma/client";
-import { LoadingPage } from "./loading";
+import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
-import { CalendarIcon } from "lucide-react";
+import { api } from "@/utils/api";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { type Reservation } from "@prisma/client";
 import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { LoadingPage } from "./loading";
 
 const FormSchema = z.object({
-  customerName: z.string(),
+  guestName: z.string(),
   firstName: z.string(),
   surname: z.string(),
-  customerEmail: z.string().email(),
+  guestEmail: z.string().email(),
   roomId: z.string(),
   checkIn: z.date(),
   checkOut: z.date(),
@@ -50,10 +50,10 @@ export default function CheckInForm({
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      customerName: reservationData?.customerName || "",
-      firstName: reservationData?.customerName.split(" ")[0],
-      surname: reservationData?.customerName.split(" ")[1],
-      customerEmail: reservationData?.customerEmail || "",
+      guestName: reservationData?.guestName || "",
+      firstName: reservationData?.guestName.split(" ")[0],
+      surname: reservationData?.guestName.split(" ")[1],
+      guestEmail: reservationData?.guestEmail || "",
       roomId: reservationData?.roomId || "",
       checkIn: reservationData?.checkIn || undefined,
       checkOut: reservationData?.checkOut || undefined,
@@ -97,7 +97,7 @@ export default function CheckInForm({
               <FormControl>
                 <Input
                   {...field}
-                  defaultValue={reservationData?.customerName.split(" ")[0]}
+                  defaultValue={reservationData?.guestName.split(" ")[0]}
                 />
               </FormControl>
               <FormMessage />
@@ -113,7 +113,7 @@ export default function CheckInForm({
               <FormControl>
                 <Input
                   {...field}
-                  defaultValue={reservationData?.customerName.split(" ")[1]}
+                  defaultValue={reservationData?.guestName.split(" ")[1]}
                 />
               </FormControl>
               <FormMessage />
@@ -122,14 +122,14 @@ export default function CheckInForm({
         />
         <FormField
           control={form.control}
-          name="customerEmail"
+          name="guestEmail"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Guest Email</FormLabel>
               <FormControl>
                 <Input
                   {...field}
-                  defaultValue={reservationData?.customerEmail ?? ""}
+                  defaultValue={reservationData?.guestEmail ?? ""}
                 />
               </FormControl>
               <FormMessage />

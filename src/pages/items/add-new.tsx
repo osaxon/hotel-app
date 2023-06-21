@@ -1,6 +1,6 @@
-import type { NextPage } from "next";
 import AdminLayout from "@/components/LayoutAdmin";
 import NewItemForm from "@/components/NewItemForm";
+import type { NextPage } from "next";
 
 const NewItemPage: NextPage = () => {
   return (

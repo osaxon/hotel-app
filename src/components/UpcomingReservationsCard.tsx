@@ -1,10 +1,10 @@
-import { BedDouble } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { api } from "@/utils/api";
 import { type Reservation } from "@prisma/client";
 import dayjs from "dayjs";
-import { api } from "@/utils/api";
-import LoadingSpinner from "./loading";
+import { BedDouble } from "lucide-react";
 import { CardSkeleton } from "./CardSkeleton";
+import LoadingSpinner from "./loading";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
 export default function UpcomingReservationsCard() {
   const { data: reservations, isLoading } =

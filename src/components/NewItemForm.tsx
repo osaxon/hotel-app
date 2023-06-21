@@ -1,18 +1,14 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, Controller } from "react-hook-form";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { toast } from "@/components/ui/use-toast";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-  useFormField,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -20,13 +16,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { api } from "@/utils/api";
-import { ItemCategory } from "@prisma/client";
+import { toast } from "@/components/ui/use-toast";
 import { convertToNormalCase } from "@/lib/utils";
+import { useSelectedItemStore } from "@/store/selectedItemStore";
+import { api } from "@/utils/api";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ItemCategory } from "@prisma/client";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import IngredientsGrid from "./IngredientsGrid";
 import { LoadingPage } from "./loading";
+import { Switch } from "./ui/switch";
+
+type ItemIngredient = {
+  id: string;
+  name: string;
+  quantity: number;
+  quantityUnit: string;
+};
 
 const FormSchema = z.object({
   name: z.string(),
+  mixedItem: z.boolean().default(false),
+
   priceUSD: z
     .string()
     .refine((value) => !isNaN(parseFloat(value)), {
@@ -49,6 +61,11 @@ export default function NewItemForm() {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
   });
+  const displayGrid = form.watch("mixedItem");
+
+  const selectedIngredients = useSelectedItemStore(
+    (state) => state.ingredients
+  );
 
   const { mutate: addItem, status } = api.pos.addItem.useMutation({
     onSuccess: () => form.reset(),
@@ -63,13 +80,31 @@ export default function NewItemForm() {
       }),
   });
 
+  const {
+    data: itemIngredients,
+    isLoading: isLoadingIngredients,
+    isError: isIngredientsError,
+  } = api.pos.getIngredients.useQuery();
+
   function onSubmit(data: z.infer<typeof FormSchema>) {
+    const ingredients = selectedIngredients.map(
+      ({ id, name, quantity, quantityUnit }) => ({
+        id,
+        name, // Provide a default value when `name` is null
+        quantity,
+        quantityUnit, // Provide a default value when `quantityUnit` is null
+      })
+    );
+
     const parsedData = {
       ...data,
       priceUSD: Number(data.priceUSD),
       happyHourPriceUSD: Number(data.happyHourPriceUSD),
+      ingredients,
     };
-    addItem(parsedData);
+
+    // addItem(parsedData);
+
     toast({
       title: "The data:",
       description: (
@@ -100,6 +135,32 @@ export default function NewItemForm() {
             </FormItem>
           )}
         />
+        <FormField
+          control={form.control}
+          name="mixedItem"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base">Mixed Item</FormLabel>
+                <FormDescription>
+                  Enable to create an item that uses 1 or more ingredients.
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        {displayGrid && itemIngredients && (
+          <>
+            <IngredientsGrid itemIngredients={itemIngredients} />
+          </>
+        )}
 
         <div className="flex gap-4">
           <FormField

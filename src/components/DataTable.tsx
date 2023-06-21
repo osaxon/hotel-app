@@ -1,16 +1,3 @@
-import { Button } from "./ui/button";
-import {
-  type ColumnDef,
-  type ColumnFiltersState,
-  type SortingState,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-  getPaginationRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-} from "@tanstack/react-table";
-
 import {
   Table,
   TableBody,
@@ -19,7 +6,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { convertToNormalCase } from "@/lib/utils";
+import {
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type ColumnDef,
+  type ColumnFiltersState,
+  type SortingState,
+} from "@tanstack/react-table";
 import { useState } from "react";
+import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
 interface DataTableProps<TData, TValue> {
@@ -27,13 +27,15 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   displayFilter?: boolean;
   filterColumn?: string;
+  filterPlaceholder?: string;
 }
 
 export default function DataTable<TData, TValue>({
   data,
   columns,
   displayFilter = true,
-  filterColumn = "customerName",
+  filterColumn = "name",
+  filterPlaceholder = `Filter ${convertToNormalCase(filterColumn)}`,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -60,7 +62,7 @@ export default function DataTable<TData, TValue>({
       {displayFilter && (
         <div className="flex items-center py-4">
           <Input
-            placeholder="Filter customer..."
+            placeholder={filterPlaceholder}
             value={
               (table.getColumn(filterColumn)?.getFilterValue() as string) ?? ""
             }
@@ -71,7 +73,6 @@ export default function DataTable<TData, TValue>({
           />
         </div>
       )}
-      {JSON.stringify(table.getFilteredSelectedRowModel().rows[0]?.original)}
       <div className="rounded-md border">
         <Table>
           <TableHeader>

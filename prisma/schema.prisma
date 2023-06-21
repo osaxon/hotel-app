@@ -12,6 +12,10 @@ datasource db {
     relationMode = "prisma"
 }
 
+generator zod {
+    provider = "zod-prisma-types"
+}
+
 model Room {
     id           String              @id @default(cuid())
     roomNumber   String              @unique
@@ -23,6 +27,7 @@ model Room {
     images       RoomImageRelation[]
 
     dailyRateUSD Decimal @default(20) @db.Decimal(10, 2)
+    tasks        Task[]
 }
 
 model RoomImage {
@@ -72,9 +77,9 @@ model Reservation {
     updatedAt DateTime?         @updatedAt
     orders    Order[]
 
-    // Basic user information fields
-    customerName  String
-    customerEmail String?
+    // Basic guest information fields
+    guestName  String
+    guestEmail String?
 
     subTotalUSD   Decimal?      @db.Decimal(10, 2)
     paymentStatus PaymentStatus @default(UNPAID)
@@ -84,18 +89,43 @@ model Reservation {
 }
 
 model Task {
-    id          String @id @default(cuid())
+    id          String   @id @default(cuid())
     shortDesc   String
     description String
+    type        TaskType @default(TASK)
+    roomId      String?
+    room        Room?    @relation(fields: [roomId], references: [id])
+    location    String
+
+    @@index([roomId])
 }
 
+// ingredients represents the individual items used by an Item - e.g. for mixed drinks.
+// usedByItems represents the Items that uses Item as an ingredient.
 model Item {
-    id                String       @id @default(cuid())
+    id                String           @id @default(cuid())
     name              String
-    priceUSD          Decimal      @db.Decimal(10, 2)
-    happyHourPriceUSD Decimal?     @db.Decimal(10, 2)
+    priceUSD          Decimal          @db.Decimal(10, 2)
+    happyHourPriceUSD Decimal?         @db.Decimal(10, 2)
     itemOrders        ItemOrders[]
     category          ItemCategory
+    quantityInStock   Int              @default(0)
+    quantityUnit      String?
+    ingredients       ItemIngredient[] @relation("ItemIngredients")
+    usedByItems       ItemIngredient[] @relation("UsedByItems")
+}
+
+// Each 
+model ItemIngredient {
+    id           String   @id @default(cuid())
+    name         String?
+    parentItems  Item[]   @relation("ItemIngredients")
+    ingredientId String?
+    ingredient   Item?    @relation("UsedByItems", fields: [ingredientId], references: [id])
+    quantity     Decimal?
+    quantityUnit String?
+
+    @@index([ingredientId])
 }
 
 model Order {
@@ -103,8 +133,8 @@ model Order {
     userId        String?
     guestId       String?
     guest         Guest?       @relation(fields: [guestId], references: [id])
-    customerName  String?
-    customerEmail String?
+    name          String?
+    email         String?
     items         ItemOrders[]
     status        OrderStatus? @default(UNPAID)
     reservationId String?
@@ -146,10 +176,12 @@ enum ItemCategory {
     BEER
     WINE
     SPIRITS
+    PREMIUM_SPIRITS
     COCKTAILS
     SNACKS
     FOOD
     ENTERTAINMENT
+    INGREDIENT
 }
 
 enum RoomType {
@@ -173,4 +205,9 @@ enum RoomStatus {
 enum PaymentStatus {
     PAID
     UNPAID
+}
+
+enum TaskType {
+    ISSUE
+    TASK
 }

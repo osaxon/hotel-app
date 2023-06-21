@@ -1,6 +1,6 @@
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { cn } from "@/lib/utils";
 
 const routes = [
   {
@@ -16,8 +16,12 @@ const routes = [
     href: "/bookings",
   },
   {
-    label: "Orders",
+    label: "Bar & Kitchen",
     href: "/orders",
+  },
+  {
+    label: "Items & Stock",
+    href: "/items",
   },
 ];
 

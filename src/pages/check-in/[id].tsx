@@ -1,9 +1,9 @@
-import type { NextPage } from "next";
-import { useRouter } from "next/router";
 import CheckInForm from "@/components/CheckInForm";
 import AdminLayout from "@/components/LayoutAdmin";
-import { api } from "@/utils/api";
 import { LoadingPage } from "@/components/loading";
+import { api } from "@/utils/api";
+import type { NextPage } from "next";
+import { useRouter } from "next/router";
 
 const CheckInPage: NextPage = () => {
   const router = useRouter();
@@ -26,7 +26,7 @@ const CheckInPage: NextPage = () => {
           <h2 className="text-3xl font-bold tracking-tight">Check In</h2>
         </div>
         <div>
-          <p>Complete this check in form for {reservation?.customerName}.</p>
+          <p>Complete this check in form for {reservation?.guestName}.</p>
         </div>
         <section>
           <CheckInForm reservationData={reservation} />

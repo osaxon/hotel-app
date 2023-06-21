@@ -1,13 +1,3 @@
-import { api } from "@/utils/api";
-import DataTable from "./DataTable";
-import { type Reservation } from "@prisma/client";
-import { type ColumnDef } from "@tanstack/react-table";
-import { Badge } from "./ui/badge";
-import Link from "next/link";
-import { Button } from "./ui/button";
-import { ArrowUpDown } from "lucide-react";
-import { MoreHorizontal } from "lucide-react";
-import { convertToNormalCase } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,8 +6,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LoadingPage } from "./loading";
+import { convertToNormalCase } from "@/lib/utils";
+import { api } from "@/utils/api";
+import { type Reservation } from "@prisma/client";
+import { type ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
+import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import Link from "next/link";
+import DataTable from "./DataTable";
+import { LoadingPage } from "./loading";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 
 export const columns: ColumnDef<Reservation>[] = [
   {
@@ -73,7 +72,7 @@ export const columns: ColumnDef<Reservation>[] = [
     },
   },
   {
-    accessorKey: "customerName",
+    accessorKey: "guestName",
     header: "Name",
   },
   {

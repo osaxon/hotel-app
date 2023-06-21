@@ -1,10 +1,11 @@
 import type { NextPage } from "next";
 import { useRouter } from "next/router";
 
-import AdminLayout from "@/components/LayoutAdmin";
-import { api } from "@/utils/api";
-import LoadingSpinner, { LoadingPage } from "@/components/loading";
 import CheckOutForm from "@/components/CheckOutForm";
+import InvoiceTablePDF from "@/components/InvoiceTablePDF";
+import AdminLayout from "@/components/LayoutAdmin";
+import LoadingSpinner, { LoadingPage } from "@/components/loading";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -14,11 +15,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import dayjs from "dayjs";
-import { Badge } from "@/components/ui/badge";
-import { FileText, Download } from "lucide-react";
+import { api } from "@/utils/api";
 import { PDFDownloadLink } from "@react-pdf/renderer";
-import InvoiceTablePDF from "@/components/InvoiceTablePDF";
+import dayjs from "dayjs";
+import { Download, FileText } from "lucide-react";
 import { useState } from "react";
 
 const CheckOutPage: NextPage = () => {

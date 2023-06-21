@@ -1,13 +1,3 @@
-import { api } from "@/utils/api";
-import DataTable from "./DataTable";
-import { type Order } from "@prisma/client";
-import { type ColumnDef } from "@tanstack/react-table";
-import { useState } from "react";
-import { Badge } from "./ui/badge";
-import Link from "next/link";
-import { Button } from "./ui/button";
-import { ArrowUpDown } from "lucide-react";
-import { MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +6,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { api } from "@/utils/api";
+import { type Order } from "@prisma/client";
+import { type ColumnDef } from "@tanstack/react-table";
+import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+import DataTable from "./DataTable";
 import { LoadingPage } from "./loading";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 
 export const columns: ColumnDef<Order>[] = [
   {
@@ -32,7 +31,7 @@ export const columns: ColumnDef<Order>[] = [
     },
   },
   {
-    accessorKey: "customerName",
+    accessorKey: "name",
     header: "Name",
   },
   //   {
@@ -96,9 +95,7 @@ export const columns: ColumnDef<Order>[] = [
   {
     id: "actions",
     cell: ({ row }) => {
-      const order = row.original;
-      const name: string = row.original.customerName ?? "";
-      const orderId: string = row.original.id;
+      const name: string = row.original.name ?? "";
 
       return (
         <DropdownMenu>
@@ -110,11 +107,6 @@ export const columns: ColumnDef<Order>[] = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            {/* <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(order.id)}
-            >
-              Copy Order ID
-            </DropdownMenuItem> */}
             <DropdownMenuItem>
               <Link href={`/orders/guests/${encodeURIComponent(name)}`}>
                 View all for {name}

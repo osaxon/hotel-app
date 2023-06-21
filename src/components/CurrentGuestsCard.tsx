@@ -1,10 +1,10 @@
+import { type Prisma } from "@prisma/client";
 import { BedDouble } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { type Prisma } from "@prisma/client";
 
 import { api } from "@/utils/api";
-import LoadingSpinner from "./loading";
 import { CardSkeleton } from "./CardSkeleton";
+import LoadingSpinner from "./loading";
 
 type ReservationWithRoom = Prisma.ReservationGetPayload<{
   include: { room: true };

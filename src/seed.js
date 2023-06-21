@@ -35,34 +35,28 @@ const seed = async () => {
       prisma.item.createMany({
         data: [
           {
-            id: "clivydazb0000v0059kmb0a00",
             name: "Draft Lager",
             priceUSD: "2",
             category: "BEER",
+            quantityUnit: "Glass",
           },
           {
-            id: "clivydazb0001v005tcxt6umx",
             name: "Can Lager",
             priceUSD: "2",
             category: "BEER",
+            quantityUnit: "Can",
           },
           {
-            id: "clivydazb0002v0057ys62hzz",
             name: "Coca Cola",
             priceUSD: "2",
             category: "SOFT_DRINKS",
+            quantityUnit: "Can",
           },
           {
-            id: "clivydazb0003v005g3v6h9ef",
-            name: "House Spirit + Mixer",
-            priceUSD: "3",
-            category: "SPIRITS",
-          },
-          {
-            id: "clivydazb0004v005unnn98ym",
             name: "House Red Wine",
             priceUSD: "4",
             category: "WINE",
+            quantityUnit: "Glass",
           },
         ],
         skipDuplicates: true,
@@ -71,42 +65,42 @@ const seed = async () => {
       prisma.room.createMany({
         data: [
           {
-            id: "clivxfkat0005v0shujgaz7qe",
             roomNumber: "2",
             roomType: "STANDARD",
             capacity: 2,
             roomName: "Whiskey",
+            status: "VACANT",
           },
           {
-            id: "clivxfkat0006v0shu7vdxicu",
             roomNumber: "3",
             roomType: "STANDARD",
             capacity: 2,
             roomName: "Billy",
+            status: "VACANT",
           },
           {
-            id: "clivxfkat0007v0shcu0mdx7s",
             roomNumber: "4",
             roomType: "DELUXE",
             capacity: 4,
             roomName: "Lool",
+            status: "VACANT",
           },
           {
-            id: "clivxfkat0008v0sh95azcs5m",
             roomNumber: "5",
             roomType: "SUPERIOR",
             capacity: 5,
             roomName: "June",
+            status: "VACANT",
           },
         ],
         skipDuplicates: true,
       }),
     ]);
 
-    const reservations = Array.from({ length: 5 }, () => {
+    const reservations = Array.from({ length: 8 }, () => {
       const { checkIn, checkOut } = getRandomFutureDate();
       return {
-        customerName: faker.name.findName(),
+        guestName: faker.name.findName(),
         checkIn,
         checkOut,
       };
@@ -115,6 +109,19 @@ const seed = async () => {
     await prisma.reservation.createMany({
       data: reservations,
     });
+
+    const guests = Array.from({ length: 4 }, () => {
+      const firstName = faker.name.firstName();
+      const surname = faker.name.lastName();
+      return {
+        firstName,
+        surname,
+        fullName: firstName + " " + surname,
+        email: faker.internet.email(),
+      };
+    });
+
+    await prisma.guest.createMany({ data: guests });
 
     console.log("Seeding complete!");
   } catch (error) {

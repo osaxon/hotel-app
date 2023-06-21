@@ -4,9 +4,15 @@ import {
   privateProcedure,
   publicProcedure,
 } from "@/server/api/trpc";
-import { ItemCategory, OrderStatus, Prisma } from "@prisma/client";
+import {
+  ItemCategory,
+  OrderStatus,
+  Prisma,
+  ItemIngredient,
+} from "@prisma/client";
 import { isHappyHour } from "@/lib/utils";
 import { Decimal } from "@prisma/client/runtime";
+import { prisma } from "@/server/db";
 
 function getSubTotal(
   items: { priceUSD: Prisma.Decimal; quantity: number }[]
@@ -25,11 +31,23 @@ export const addItemInputSchema = z.object({
   priceUSD: z.number().positive(),
   happyHourPriceUSD: z.number().positive().optional(),
   category: z.nativeEnum(ItemCategory),
+  quantityInStock: z.number().positive().optional(),
+  ingredients: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string().nullable(),
+        quantity: z.number().positive(),
+        ingredientId: z.string().optional(),
+        quantityUnit: z.string().optional(),
+      })
+    )
+    .optional(),
 });
 
 // Define the input schema using Zod
 const createOrderInputSchema = z.object({
-  customerName: z.string().optional(),
+  name: z.string().optional(),
   room: z.string().optional(),
   items: z.array(
     z.object({
@@ -78,24 +96,75 @@ export const posRouter = createTRPCRouter({
   }),
 
   getItems: publicProcedure.query(async ({ ctx }) => {
-    const items = await ctx.prisma.item.findMany();
+    const items = await ctx.prisma.item.findMany({
+      where: { category: { not: { equals: "INGREDIENT" } } },
+      include: {
+        _count: true,
+        ingredients: {
+          include: {
+            _count: true,
+          },
+        },
+      },
+    });
 
     return items;
+  }),
+
+  getIngredients: privateProcedure.query(async ({ ctx }) => {
+    const ingredients = await ctx.prisma.itemIngredient.findMany({
+      include: {
+        parentItems: true,
+        ingredient: true,
+      },
+    });
+    return ingredients;
   }),
 
   addItem: privateProcedure
     .input(addItemInputSchema)
     .mutation(async ({ ctx, input }) => {
       const validatedInput = addItemInputSchema.parse(input);
+      const { ingredients, ...itemData } = validatedInput;
 
+      // Create the item
       const item = await ctx.prisma.item.create({
         data: {
           happyHourPriceUSD: new Decimal(
             validatedInput.happyHourPriceUSD ?? validatedInput.priceUSD
           ),
-          ...validatedInput,
+          ...itemData,
         },
       });
+
+      // Process the ingredients if provided
+      if (validatedInput.ingredients && validatedInput.ingredients.length > 0) {
+        const ingredientIds = validatedInput.ingredients
+          .filter((ingredient) => ingredient !== undefined)
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          .map((ingredient) => ingredient?.id);
+
+        // Find the ingredients in the database
+        const ingredients = await ctx.prisma.item.findMany({
+          where: {
+            id: {
+              in: ingredientIds,
+            },
+          },
+        });
+
+        // Establish the relationship between the item and ingredients
+        await ctx.prisma.item.update({
+          where: {
+            id: item.id,
+          },
+          data: {
+            ingredients: {
+              connect: ingredients.map((ingredient) => ({ id: ingredient.id })),
+            },
+          },
+        });
+      }
 
       return item;
     }),
@@ -103,7 +172,7 @@ export const posRouter = createTRPCRouter({
   createOrder: publicProcedure
     .input(createOrderInputSchema)
     .mutation(async ({ ctx, input }) => {
-      const { customerName, items, guestId, reservationId } = input;
+      const { name, items, guestId, reservationId } = input;
       let order;
       if (guestId && reservationId) {
         order = await ctx.prisma.order.create({
@@ -119,7 +188,7 @@ export const posRouter = createTRPCRouter({
             guest: {
               connect: { id: input.guestId },
             },
-            customerName: customerName,
+            name: name,
             reservation: {
               connect: { id: reservationId },
             },
@@ -144,7 +213,7 @@ export const posRouter = createTRPCRouter({
             guest: {
               connect: { id: input.guestId },
             },
-            customerName: customerName,
+            name: name,
             happyHour: false,
             subTotalUSD: getSubTotal(items),
           },
@@ -163,7 +232,7 @@ export const posRouter = createTRPCRouter({
                 quantity: item.quantity,
               })),
             },
-            customerName: customerName,
+            name: name,
             happyHour: isHappyHour(),
             subTotalUSD: getSubTotal(items),
           },

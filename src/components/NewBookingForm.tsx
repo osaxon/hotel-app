@@ -1,10 +1,4 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { toast } from "@/components/ui/use-toast";
 import {
   Form,
   FormControl,
@@ -14,21 +8,28 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/use-toast";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ChevronsUpDown } from "lucide-react";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 
-import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 import { api } from "@/utils/api";
 
-import { type Reservation } from "@prisma/client";
-import { LoadingPage } from "./loading";
 import { cn } from "@/lib/utils";
-import { CalendarIcon } from "lucide-react";
+import { type Reservation } from "@prisma/client";
 import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { useState } from "react";
+import { LoadingPage } from "./loading";
 import {
   Command,
   CommandEmpty,
@@ -36,12 +37,10 @@ import {
   CommandInput,
   CommandItem,
 } from "./ui/command";
-import { GuestsTable } from "./GuestsTable";
-import { useState } from "react";
 
 const FormSchema = z.object({
-  customerName: z.string(),
-  customerEmail: z.string().email(),
+  guestName: z.string(),
+  guestEmail: z.string().email(),
   returningGuest: z.boolean().default(false),
   guestId: z.string().optional(),
   checkIn: z.date(),
@@ -58,17 +57,20 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
     isError: isGuestsError,
   } = api.guests.getAll.useQuery();
 
-  const { mutate } = api.reservations.createReservation.useMutation();
+  const { mutate: createReservation } =
+    api.reservations.createReservation.useMutation();
 
-  const { data: guestData, remove } = api.guests.getById.useQuery(
+  // Disabled by default. Query runs if a returning guest is selected.
+  // Form fields then populated with response
+  const { data: guestData } = api.guests.getById.useQuery(
     {
       id: selectedGuest,
     },
     {
       enabled: runGuestQuery,
       onSuccess: (data) => {
-        form.setValue("customerName", data?.fullName ?? "");
-        form.setValue("customerEmail", data?.email ?? "");
+        form.setValue("guestName", data?.fullName ?? "");
+        form.setValue("guestEmail", data?.email ?? "");
       },
     }
   );
@@ -81,7 +83,7 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
   });
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    // mutate(data);
+    // createReservation(data);
     toast({
       title: "The data:",
       description: (
@@ -179,7 +181,7 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
             />
             <FormField
               control={form.control}
-              name="customerName"
+              name="guestName"
               render={({ field }) => {
                 return (
                   <FormItem>
@@ -198,7 +200,7 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
 
             <FormField
               control={form.control}
-              name="customerEmail"
+              name="guestEmail"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Guest Email</FormLabel>
@@ -217,7 +219,7 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
           <>
             <FormField
               control={form.control}
-              name="customerName"
+              name="guestName"
               render={({ field }) => {
                 return (
                   <FormItem>
@@ -233,7 +235,7 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
 
             <FormField
               control={form.control}
-              name="customerEmail"
+              name="guestEmail"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Guest Email</FormLabel>

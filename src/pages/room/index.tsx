@@ -1,19 +1,19 @@
-import type { GetStaticProps, NextPage } from "next";
-import { api } from "@/utils/api";
+import AdminLayout from "@/components/LayoutAdmin";
+import NewRoomModal from "@/components/NewRoomModal";
 import { LoadingPage } from "@/components/loading";
-import { generateSSGHelper } from "@/server/helpers/ssgHelper";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
+  CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardContent,
 } from "@/components/ui/card";
-import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+import { generateSSGHelper } from "@/server/helpers/ssgHelper";
+import { api } from "@/utils/api";
 import { BedDouble } from "lucide-react";
-import NewRoomModal from "@/components/NewRoomModal";
-import AdminLayout from "@/components/LayoutAdmin";
+import type { GetStaticProps, NextPage } from "next";
+import Link from "next/link";
 
 const RoomAdminPage: NextPage = () => {
   const { data: rooms, isLoading: isLoadingRooms } =

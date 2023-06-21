@@ -1,6 +1,5 @@
-import NewBookingForm from "@/components/NewBookingForm";
 import AdminLayout from "@/components/LayoutAdmin";
-import { GuestsTable } from "@/components/GuestsTable";
+import NewBookingForm from "@/components/NewBookingForm";
 
 export default function NewBookingPage() {
   return (

@@ -1,6 +1,6 @@
 import { useUploadThing } from "@/utils/useUploadthing";
-import { useDropzone } from "react-dropzone";
 import { useCallback, useState } from "react";
+import { useDropzone } from "react-dropzone";
 
 import type { FileWithPath } from "react-dropzone";
 import { generateClientDropzoneAccept } from "uploadthing/client";

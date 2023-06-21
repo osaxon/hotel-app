@@ -1,9 +1,4 @@
-import { type NextPage } from "next";
-import Head from "next/head";
-import { api } from "@/utils/api";
-import { useStore } from "@/store/appStore";
-import { useState } from "react";
-import { CalendarDateRangePicker } from "@/components/ui/date-range-picker";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,8 +7,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { CalendarDateRangePicker } from "@/components/ui/date-range-picker";
+import { useStore } from "@/store/appStore";
+import { api } from "@/utils/api";
 import { BedDouble } from "lucide-react";
+import { type NextPage } from "next";
+import Head from "next/head";
+import { useState } from "react";
 
 const Home: NextPage = () => {
   const selectedDate = useStore((state) => state.selectedDate);

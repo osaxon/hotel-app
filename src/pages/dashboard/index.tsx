@@ -1,9 +1,8 @@
-import { type GetServerSideProps } from "next";
-import { getAuth, buildClerkProps } from "@clerk/nextjs/server";
-import Link from "next/link";
-import { api } from "@/utils/api";
-import { generateSSGHelper } from "@/server/helpers/ssgHelper";
-import { BedDouble } from "lucide-react";
+import CurrentGuestsCard from "@/components/CurrentGuestsCard";
+import AdminLayout from "@/components/LayoutAdmin";
+import { Overview } from "@/components/Overview";
+import { RecentSales } from "@/components/RecentSales";
+import UpcomingReservationsCard from "@/components/UpcomingReservationsCard";
 import LoadingSpinner from "@/components/loading";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,13 +12,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import CurrentGuestsCard from "@/components/CurrentGuestsCard";
-import UpcomingReservationsCard from "@/components/UpcomingReservationsCard";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarDateRangePicker } from "@/components/ui/date-range-picker";
-import { Overview } from "@/components/Overview";
-import AdminLayout from "@/components/LayoutAdmin";
-import { RecentSales } from "@/components/RecentSales";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { generateSSGHelper } from "@/server/helpers/ssgHelper";
+import { api } from "@/utils/api";
+import { buildClerkProps, getAuth } from "@clerk/nextjs/server";
+import { BedDouble } from "lucide-react";
+import { type GetServerSideProps } from "next";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const {

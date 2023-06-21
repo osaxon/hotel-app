@@ -1,7 +1,7 @@
+import { appConfig } from "app.config";
 import { type NextPage } from "next";
 import Head from "next/head";
 import Link from "next/link";
-import { appConfig } from "app.config";
 
 const Home: NextPage = () => {
   return (

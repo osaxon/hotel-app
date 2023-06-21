@@ -1,9 +1,9 @@
+import { Checkbox } from "@/components/ui/checkbox";
 import { api } from "@/utils/api";
-import DataTable from "./DataTable";
 import { type Guest } from "@prisma/client";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
+import DataTable from "./DataTable";
 
 import { LoadingPage } from "./loading";
 

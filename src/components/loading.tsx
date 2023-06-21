@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function LoadingSpinner(props: { size?: number }) {
   return (
     <div role="status">

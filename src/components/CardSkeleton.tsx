@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { BedDouble } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
 export function CardSkeleton() {
   return (
