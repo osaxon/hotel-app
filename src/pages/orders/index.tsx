@@ -1,4 +1,5 @@
-import { type GetStaticProps } from "next";
+import { buildClerkProps, getAuth } from "@clerk/nextjs/server";
+import { type GetServerSideProps } from "next";
 import { useState } from "react";
 
 import AdminLayout from "@/components/LayoutAdmin";
@@ -428,13 +429,15 @@ export default function OrdersPage() {
   );
 }
 
-export const getStaticProps: GetStaticProps = async () => {
-  const ssg = generateSSGHelper();
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const { userId } = getAuth(ctx.req);
+  const ssg = generateSSGHelper(userId ?? "");
 
   await ssg.pos.getItems.prefetch();
 
   return {
     props: {
+      ...buildClerkProps(ctx.req),
       trcpState: ssg.dehydrate(),
     },
   };

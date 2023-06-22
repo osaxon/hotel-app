@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/card";
 import { generateSSGHelper } from "@/server/helpers/ssgHelper";
 import { api } from "@/utils/api";
+import { buildClerkProps, getAuth } from "@clerk/nextjs/server";
 import { BedDouble } from "lucide-react";
-import type { GetStaticProps, NextPage } from "next";
+import type { GetServerSideProps, NextPage } from "next";
 import Link from "next/link";
 
 const RoomAdminPage: NextPage = () => {
@@ -72,13 +73,16 @@ const RoomAdminPage: NextPage = () => {
   );
 };
 
-export const getStaticProps: GetStaticProps = async () => {
-  const ssg = generateSSGHelper();
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const { userId } = getAuth(ctx.req);
+  const ssg = generateSSGHelper(userId ?? "");
 
   await ssg.rooms.getAll.prefetch();
 
   return {
     props: {
+      ...buildClerkProps(ctx.req),
+
       trcpState: ssg.dehydrate(),
     },
   };
