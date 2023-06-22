@@ -2,6 +2,7 @@ import { useSelectedItemStore } from "@/store/selectedItemStore";
 import { Check, Plus } from "lucide-react";
 import LoadingSpinner from "./loading";
 
+import { cn } from "@/lib/utils";
 import { Prisma } from "@prisma/client";
 
 type IngredientWithItems = Prisma.ItemIngredientGetPayload<{
@@ -31,41 +32,53 @@ export default function IngredientsGrid({
   };
 
   return (
-    <section className="relative flex max-h-[33vh] flex-col gap-4 overflow-y-scroll">
-      <div>
-        <h2 className="text-xl font-bold tracking-tight">Select Ingredients</h2>
-      </div>
-      <div className="relative flex flex-col gap-4">
-        {itemIngredients &&
-          itemIngredients.map((item) => (
-            <div
-              className="relative flex cursor-pointer justify-between rounded border p-4"
-              onClick={() => handleClick(item)}
-              key={item.id}
-            >
-              <div className="flex grow justify-between">
-                <div className="flex grow flex-col gap-4">
-                  <p className="select-none font-semibold">{item.name}</p>
-                  <p className="select-none text-muted-foreground">
-                    {item.quantity?.toString()} {item.quantityUnit}
-                  </p>
-                </div>
-                <div>
-                  {selectedIngredients.some(
-                    (selected) => selected?.id === item.id
-                  ) ? (
-                    <div className="flex h-full grow flex-col justify-between">
-                      <Check size={36} />
-                    </div>
-                  ) : (
-                    <Plus size={36} />
+    <div className="relative">
+      <section className="flex max-h-[33vh] flex-col gap-4 overflow-y-scroll border">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">
+            Select Ingredients
+          </h2>
+        </div>
+        <div className="relative flex flex-col gap-4">
+          {itemIngredients &&
+            itemIngredients.map((item) => {
+              const isSelected = selectedIngredients.some(
+                (selected) => selected?.id === item.id
+              );
+              return (
+                <div
+                  className={cn(
+                    "relative flex cursor-pointer justify-between rounded border p-4",
+                    isSelected && "bg-emerald-500"
                   )}
+                  onClick={() => handleClick(item)}
+                  key={item.id}
+                >
+                  <div className="flex grow justify-between">
+                    <div className="flex grow flex-col gap-4">
+                      <p className="select-none font-semibold">{item.name}</p>
+                      <p className="select-none text-muted-foreground">
+                        {item.quantity?.toString()} {item.quantityUnit}
+                      </p>
+                    </div>
+                    <div>
+                      {selectedIngredients.some(
+                        (selected) => selected?.id === item.id
+                      ) ? (
+                        <div className="flex h-full grow flex-col justify-between">
+                          <Check size={36} />
+                        </div>
+                      ) : (
+                        <Plus size={36} />
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
-      </div>
-      <div className="pointer-events-none absolute bottom-0 h-8 w-full bg-gradient-to-t from-white to-transparent"></div>
-    </section>
+              );
+            })}
+        </div>
+      </section>
+      <div className="pointer-events-none absolute bottom-0 h-10 w-full bg-gradient-to-t from-white to-transparent"></div>
+    </div>
   );
 }

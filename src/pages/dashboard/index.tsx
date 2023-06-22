@@ -12,10 +12,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { CalendarDateRangePicker } from "@/components/ui/date-range-picker";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { generateSSGHelper } from "@/server/helpers/ssgHelper";
 import { api } from "@/utils/api";
+import clerkClient from "@clerk/clerk-sdk-node";
 import { buildClerkProps, getAuth } from "@clerk/nextjs/server";
 import { BedDouble } from "lucide-react";
 import { type GetServerSideProps } from "next";
@@ -36,16 +36,11 @@ export default function DashboardPage() {
         <div className="flex-1 space-y-4 p-8 pt-6">
           <div className="flex items-center justify-between space-y-2">
             <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-            <div className="flex items-center space-x-2">
-              <CalendarDateRangePicker />
-            </div>
           </div>
           <Tabs defaultValue={"overview"} className="space-y-4">
             <TabsList>
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="reservations">Reservations</TabsTrigger>
-              <TabsTrigger value="rooms">Rooms</TabsTrigger>
-              <TabsTrigger value="tasks">Tasks</TabsTrigger>
+              <TabsTrigger value="bar">Bar</TabsTrigger>
             </TabsList>
 
             {/* Overview tab */}
@@ -118,10 +113,26 @@ export default function DashboardPage() {
 }
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const session = getAuth(ctx.req);
-  const ssg = generateSSGHelper();
+  const { userId } = getAuth(ctx.req);
+  const ssg = generateSSGHelper(userId ?? "");
 
-  if (!session) {
+  // Get list of admin members
+  const members = await clerkClient.organizations.getOrganizationMembershipList(
+    {
+      organizationId: "org_2QShJyauTOgh6ieAcugtZLY5j9c",
+    }
+  );
+
+  const filteredMembers = members.map((mem) => {
+    return {
+      id: mem.publicUserData?.userId,
+      name: mem.publicUserData?.firstName,
+    };
+  });
+
+  const isAdmin = filteredMembers.some((member) => member.id === userId);
+
+  if (!isAdmin) {
     return {
       redirect: {
         destination: "/", // Redirect to a non-admin page
@@ -131,7 +142,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   }
 
   await ssg.rooms.getAll.prefetch();
-  //   await ssg.reservations.getAll.prefetch();
 
   return {
     props: {

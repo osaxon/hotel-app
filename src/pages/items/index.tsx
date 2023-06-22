@@ -1,3 +1,4 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { NextPage } from "next";
 
 import { ItemsTable } from "@/components/ItemsTable";
@@ -13,14 +14,29 @@ const ItemsPage: NextPage = () => {
           <div className="flex items-center justify-between space-y-2">
             <h2 className="text-3xl font-bold tracking-tight">Items</h2>
           </div>
-          <div>
-            <Link href="/items/add-new">
-              <Button>Add New</Button>
-            </Link>
-          </div>
-          <section>
-            <ItemsTable />
-          </section>
+          <Tabs defaultValue={"inventory"} className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="inventory">Inventory</TabsTrigger>
+              <TabsTrigger value="pos">On POS</TabsTrigger>
+            </TabsList>
+
+            <div>
+              <Link href="/items/add-new">
+                <Button>Add New</Button>
+              </Link>
+            </div>
+
+            <TabsContent value="inventory" className="space-y-4">
+              <section>
+                <ItemsTable variant="inventory" />
+              </section>
+            </TabsContent>
+            <TabsContent value="pos" className="space-y-4">
+              <section>
+                <ItemsTable variant="pos" />
+              </section>
+            </TabsContent>
+          </Tabs>
         </section>
       </AdminLayout>
     </>

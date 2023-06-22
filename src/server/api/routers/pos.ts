@@ -32,6 +32,7 @@ export const addItemInputSchema = z.object({
   happyHourPriceUSD: z.number().positive().optional(),
   category: z.nativeEnum(ItemCategory),
   quantityInStock: z.number().positive().optional(),
+  mixedItem: z.boolean(),
   ingredients: z
     .array(
       z.object({
@@ -61,7 +62,7 @@ const createOrderInputSchema = z.object({
 });
 
 export const posRouter = createTRPCRouter({
-  getAllOrders: publicProcedure.query(async ({ ctx }) => {
+  getAllOrders: privateProcedure.query(async ({ ctx }) => {
     const orders = await ctx.prisma.order.findMany({
       include: {
         items: true,
@@ -72,7 +73,7 @@ export const posRouter = createTRPCRouter({
     return orders;
   }),
 
-  getLastDay: publicProcedure.query(async ({ ctx }) => {
+  getLastDay: privateProcedure.query(async ({ ctx }) => {
     const currentDate = new Date();
     const twentyFourHoursAgo = new Date(
       currentDate.getTime() - 24 * 60 * 60 * 1000
@@ -125,7 +126,9 @@ export const posRouter = createTRPCRouter({
     .input(addItemInputSchema)
     .mutation(async ({ ctx, input }) => {
       const validatedInput = addItemInputSchema.parse(input);
-      const { ingredients, ...itemData } = validatedInput;
+
+      // split ingredients from input
+      const { mixedItem, ingredients, ...itemData } = validatedInput;
 
       // Create the item
       const item = await ctx.prisma.item.create({
@@ -137,15 +140,16 @@ export const posRouter = createTRPCRouter({
         },
       });
 
-      // Process the ingredients if provided
-      if (validatedInput.ingredients && validatedInput.ingredients.length > 0) {
-        const ingredientIds = validatedInput.ingredients
+      // Add Item Ingredients if provided
+
+      if (mixedItem && ingredients && ingredients.length > 0) {
+        // Extract the IDs from the Ingredients
+        const ingredientIds = ingredients
           .filter((ingredient) => ingredient !== undefined)
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           .map((ingredient) => ingredient?.id);
 
-        // Find the ingredients in the database
-        const ingredients = await ctx.prisma.item.findMany({
+        // Find the Items in the database
+        const items = await ctx.prisma.item.findMany({
           where: {
             id: {
               in: ingredientIds,
@@ -153,7 +157,7 @@ export const posRouter = createTRPCRouter({
           },
         });
 
-        // Establish the relationship between the item and ingredients
+        // Update the new Item in the database with the Ingredients
         await ctx.prisma.item.update({
           where: {
             id: item.id,
@@ -164,12 +168,12 @@ export const posRouter = createTRPCRouter({
             },
           },
         });
-      }
 
-      return item;
+        return item;
+      }
     }),
 
-  createOrder: publicProcedure
+  createOrder: privateProcedure
     .input(createOrderInputSchema)
     .mutation(async ({ ctx, input }) => {
       const { name, items, guestId, reservationId } = input;

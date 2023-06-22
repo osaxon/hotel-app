@@ -1,9 +1,11 @@
+import { Button } from "@/components/ui/button";
+import { SignInButton, SignOutButton, useUser } from "@clerk/nextjs";
 import { appConfig } from "app.config";
 import { type NextPage } from "next";
 import Head from "next/head";
-import Link from "next/link";
 
 const Home: NextPage = () => {
+  const user = useUser();
   return (
     <>
       <Head>
@@ -13,7 +15,15 @@ const Home: NextPage = () => {
       </Head>
       <main className="flex min-h-screen flex-col items-center justify-center bg-secondary">
         <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16 ">
-          <Link href="/dashboard">Sign In</Link>
+          {user.isSignedIn ? (
+            <Button>
+              <SignOutButton />
+            </Button>
+          ) : (
+            <Button>
+              <SignInButton mode="modal" />
+            </Button>
+          )}
         </div>
       </main>
     </>

@@ -6,16 +6,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { convertToNormalCase } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { api } from "@/utils/api";
-import { type Reservation } from "@prisma/client";
+import { ReservationStatus, type Reservation } from "@prisma/client";
 import { type ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import {
+  ArrowUpDown,
+  CalendarClock,
+  Check,
+  CheckCheck,
+  MoreHorizontal,
+  Receipt,
+} from "lucide-react";
 import Link from "next/link";
 import DataTable from "./DataTable";
 import { LoadingPage } from "./loading";
-import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 
 export const columns: ColumnDef<Reservation>[] = [
@@ -85,32 +96,45 @@ export const columns: ColumnDef<Reservation>[] = [
   },
   {
     accessorKey: "status",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Status
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: "Status",
     cell: ({ row }) => {
-      const status: string = row.getValue("status");
+      const status: ReservationStatus = row.getValue("status");
       return (
-        <Badge
-          className="ml-4 uppercase"
-          variant={
-            status === "CONFIRMED"
-              ? "default"
-              : status === "FINAL_BILL"
-              ? "destructive"
-              : "secondary"
-          }
-        >
-          {convertToNormalCase(status)}
-        </Badge>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger className="cursor-auto">
+              {status === "CHECKED_IN" ? (
+                <>
+                  <Check className="text-cyan-600" />
+                  <TooltipContent>
+                    <p>Checked In</p>
+                  </TooltipContent>
+                </>
+              ) : status === "CONFIRMED" ? (
+                <>
+                  <CalendarClock />
+                  <TooltipContent>
+                    <p>Booking Confirmed</p>
+                  </TooltipContent>
+                </>
+              ) : status === "FINAL_BILL" ? (
+                <>
+                  <Receipt className="text-green-600" />
+                  <TooltipContent>
+                    <p>Final Bill Ready</p>
+                  </TooltipContent>
+                </>
+              ) : status === "CHECKED_OUT" ? (
+                <>
+                  <CheckCheck />
+                  <TooltipContent>
+                    <p>Checked Out</p>
+                  </TooltipContent>
+                </>
+              ) : null}
+            </TooltipTrigger>
+          </Tooltip>
+        </TooltipProvider>
       );
     },
   },

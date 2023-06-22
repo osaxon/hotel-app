@@ -12,6 +12,8 @@ import superjson from "@/utils/superjson";
 import { ZodError } from "zod";
 import { prisma } from "@/server/db";
 import { getAuth } from "@clerk/nextjs/server";
+import clerkClient from "@clerk/clerk-sdk-node";
+import { env } from "@/env.mjs";
 /**
  * 1. CONTEXT
  *
@@ -29,15 +31,13 @@ import { getAuth } from "@clerk/nextjs/server";
 export const createTRPCContext = (opts: CreateNextContextOptions) => {
   const { req } = opts;
   // get the session and current user to validate requests are made by an authenticated user
-  const sesh = getAuth(req);
+  const session = getAuth(req);
 
-  const userId = sesh.userId;
-  const userOrg = sesh.orgRole;
+  const userId = session.userId;
 
   return {
     prisma,
     userId,
-    userOrg,
   };
 };
 
@@ -88,7 +88,23 @@ export const publicProcedure = t.procedure;
 
 // create tRPC middleware to run on every request to back end from the client
 const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
-  if (!ctx.userId) {
+  // Get list of admin members
+  const members = await clerkClient.organizations.getOrganizationMembershipList(
+    {
+      organizationId: env.CLERK_ADMIN_ORG,
+    }
+  );
+
+  const filteredMembers = members.map((mem) => {
+    return {
+      id: mem.publicUserData?.userId,
+      name: mem.publicUserData?.firstName,
+    };
+  });
+
+  const isAdmin = filteredMembers.some((member) => member.id === ctx.userId);
+
+  if (isAdmin === false) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
       message: "User not authorised",
@@ -98,7 +114,6 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
   return next({
     ctx: {
       userId: ctx.userId,
-      userOrg: ctx.userOrg,
     },
   });
 });

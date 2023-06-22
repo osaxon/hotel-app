@@ -63,7 +63,22 @@ export default function CheckInForm({
   const { data: rooms, isLoading: isLoadingRooms } =
     api.rooms.getVacanctRooms.useQuery();
 
-  const { mutate: checkIn } = api.reservations.checkIn.useMutation();
+  const { mutate: checkIn, isLoading: isCheckingIn } =
+    api.reservations.checkIn.useMutation({
+      onSuccess: () => form.reset(),
+      onError: (data) => {
+        toast({
+          title: "The data:",
+          description: (
+            <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
+              <code className="text-white">
+                {JSON.stringify(data, null, 2)}
+              </code>
+            </pre>
+          ),
+        });
+      },
+    });
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
     checkIn({ reservationId: reservationData?.id, ...data });
@@ -136,6 +151,7 @@ export default function CheckInForm({
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="checkIn"
@@ -173,10 +189,6 @@ export default function CheckInForm({
                     mode="single"
                     selected={field.value}
                     onSelect={field.onChange}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date("1900-01-01")
-                    }
-                    initialFocus
                   />
                 </PopoverContent>
               </Popover>
@@ -184,6 +196,7 @@ export default function CheckInForm({
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="checkOut"
@@ -221,9 +234,9 @@ export default function CheckInForm({
                     mode="single"
                     selected={field.value}
                     onSelect={field.onChange}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date("1900-01-01")
-                    }
+                    // disabled={(date) =>
+                    //   date > new Date() || date < new Date("1900-01-01")
+                    // }
                     initialFocus
                   />
                 </PopoverContent>

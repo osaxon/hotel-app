@@ -1,8 +1,11 @@
 import AdminLayout from "@/components/LayoutAdmin";
 import { LoadingPage } from "@/components/loading";
 import { generateSSGHelper } from "@/server/helpers/ssgHelper";
+import clerkClient from "@clerk/clerk-sdk-node";
+import { getAuth } from "@clerk/nextjs/server";
+
 import { api } from "@/utils/api";
-import type { GetStaticProps, NextPage } from "next";
+import type { GetServerSideProps, NextPage } from "next";
 
 const SingleRoomAdminPage: NextPage<{ id: string }> = ({ id }) => {
   const { data, isLoading } = api.rooms.getById.useQuery({
@@ -26,10 +29,37 @@ const SingleRoomAdminPage: NextPage<{ id: string }> = ({ id }) => {
   );
 };
 
-export const getStaticProps: GetStaticProps = async (context) => {
-  const ssg = generateSSGHelper();
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const { userId } = getAuth(ctx.req);
 
-  const id = context.params?.id;
+  const ssg = generateSSGHelper(userId ?? "");
+
+  // Get list of admin members
+  const members = await clerkClient.organizations.getOrganizationMembershipList(
+    {
+      organizationId: "org_2QShJyauTOgh6ieAcugtZLY5j9c",
+    }
+  );
+
+  const filteredMembers = members.map((mem) => {
+    return {
+      id: mem.publicUserData?.userId,
+      name: mem.publicUserData?.firstName,
+    };
+  });
+
+  const isAdmin = filteredMembers.some((member) => member.id === userId);
+
+  if (!isAdmin) {
+    return {
+      redirect: {
+        destination: "/", // Redirect to a non-admin page
+        permanent: false,
+      },
+    };
+  }
+
+  const id = ctx.params?.id;
 
   if (typeof id !== "string") throw new Error("No id");
 
@@ -41,10 +71,6 @@ export const getStaticProps: GetStaticProps = async (context) => {
       id,
     },
   };
-};
-
-export const getStaticPaths = () => {
-  return { paths: [], fallback: "blocking" };
 };
 
 export default SingleRoomAdminPage;

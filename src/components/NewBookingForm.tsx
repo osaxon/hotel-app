@@ -9,9 +9,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { toast } from "@/components/ui/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
@@ -26,8 +25,10 @@ import { api } from "@/utils/api";
 
 import { cn } from "@/lib/utils";
 import { type Reservation } from "@prisma/client";
+import { ToastAction } from "@radix-ui/react-toast";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { LoadingPage } from "./loading";
 import {
@@ -37,6 +38,7 @@ import {
   CommandInput,
   CommandItem,
 } from "./ui/command";
+import { toast } from "./ui/use-toast";
 
 const FormSchema = z.object({
   guestName: z.string(),
@@ -58,7 +60,20 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
   } = api.guests.getAll.useQuery();
 
   const { mutate: createReservation } =
-    api.reservations.createReservation.useMutation();
+    api.reservations.createReservation.useMutation({
+      onSuccess: (data) => {
+        toast({
+          title: "New Reservation",
+          description: (
+            <div className="flex justify-between">
+              <Check />
+              <p>Reservation added</p>
+            </div>
+          ),
+          action: <Link href={`/check-in/${data.id}`}>Check-In</Link>,
+        });
+      },
+    });
 
   // Disabled by default. Query runs if a returning guest is selected.
   // Form fields then populated with response
@@ -84,12 +99,26 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
     // createReservation(data);
+
+    // toast({
+    //   title: "The data:",
+    //   description: (
+    //     <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
+    //       <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+    //     </pre>
+    //   ),
+    // });
+
     toast({
-      title: "The data:",
+      title: "New Reservation",
       description: (
-        <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
+        <div className="flex justify-between">
+          <Check />
+          <p>Reservation added</p>
+        </div>
+      ),
+      action: (
+        <ToastAction altText="Go to check-in">Go to Check In</ToastAction>
       ),
     });
   }
@@ -279,9 +308,6 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
                     mode="single"
                     selected={field.value}
                     onSelect={field.onChange}
-                    disabled={(date) =>
-                      date.valueOf() < new Date().setHours(0, 0, 0, 0)
-                    }
                     initialFocus
                   />
                 </PopoverContent>

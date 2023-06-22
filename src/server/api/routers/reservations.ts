@@ -3,7 +3,11 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import dayjs from "dayjs";
 
-import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import {
+  createTRPCRouter,
+  publicProcedure,
+  privateProcedure,
+} from "@/server/api/trpc";
 
 import { type Prisma, ReservationStatus, RoomStatus } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime";
@@ -46,14 +50,14 @@ const addClerkUserData = async (reservations: ReservationWithRoom[]) => {
 };
 
 export const reservationsRouter = createTRPCRouter({
-  getAll: publicProcedure.query(async ({ ctx }) => {
+  getAll: privateProcedure.query(async ({ ctx }) => {
     const reservations = await ctx.prisma.reservation.findMany({
       take: 100,
     });
     return reservations;
   }),
 
-  createReservation: publicProcedure
+  createReservation: privateProcedure
     .input(
       z.object({
         guestName: z.string(),
@@ -98,7 +102,7 @@ export const reservationsRouter = createTRPCRouter({
       return reservation;
     }),
 
-  getRoomReservations: publicProcedure
+  getRoomReservations: privateProcedure
     .input(z.object({ roomId: z.string() }))
     .query(async ({ ctx, input }) => {
       const reservations = await ctx.prisma.reservation.findMany({
@@ -147,7 +151,7 @@ export const reservationsRouter = createTRPCRouter({
       return reservation;
     }),
 
-  checkIn: publicProcedure
+  checkIn: privateProcedure
     .input(
       z.object({
         reservationId: z.string(),
@@ -189,7 +193,7 @@ export const reservationsRouter = createTRPCRouter({
       return reservation;
     }),
 
-  calculateSubTotal: publicProcedure
+  calculateSubTotal: privateProcedure
     .input(
       z.object({
         reservationId: z.string(),
@@ -224,7 +228,7 @@ export const reservationsRouter = createTRPCRouter({
       return updatedReservation;
     }),
 
-  checkOut: publicProcedure
+  checkOut: privateProcedure
     .input(
       z.object({
         reservationId: z.string(),
@@ -254,7 +258,7 @@ export const reservationsRouter = createTRPCRouter({
       return reservation;
     }),
 
-  getActiveReservations: publicProcedure.query(async ({ ctx }) => {
+  getActiveReservations: privateProcedure.query(async ({ ctx }) => {
     const reservations = await ctx.prisma.reservation.findMany({
       where: {
         status: {

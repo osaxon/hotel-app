@@ -38,7 +38,6 @@ type ItemIngredient = {
 const FormSchema = z.object({
   name: z.string(),
   mixedItem: z.boolean().default(false),
-
   priceUSD: z
     .string()
     .refine((value) => !isNaN(parseFloat(value)), {
@@ -89,10 +88,10 @@ export default function NewItemForm() {
   function onSubmit(data: z.infer<typeof FormSchema>) {
     const ingredients = selectedIngredients.map(
       ({ id, name, quantity, quantityUnit }) => ({
-        id,
-        name, // Provide a default value when `name` is null
-        quantity,
-        quantityUnit, // Provide a default value when `quantityUnit` is null
+        id: id || "",
+        name: name || "", // Provide a default value when `name` is null
+        quantity: Number(quantity),
+        quantityUnit: quantityUnit || "", // Provide a default value when `quantityUnit` is null
       })
     );
 
@@ -103,7 +102,7 @@ export default function NewItemForm() {
       ingredients,
     };
 
-    // addItem(parsedData);
+    addItem(parsedData);
 
     toast({
       title: "The data:",
@@ -124,19 +123,6 @@ export default function NewItemForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="w-2/3 space-y-6">
         <FormField
           control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Item Name</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
           name="mixedItem"
           render={({ field }) => (
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
@@ -155,12 +141,24 @@ export default function NewItemForm() {
             </FormItem>
           )}
         />
-
         {displayGrid && itemIngredients && (
           <>
             <IngredientsGrid itemIngredients={itemIngredients} />
           </>
         )}
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Item Name</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="flex gap-4">
           <FormField

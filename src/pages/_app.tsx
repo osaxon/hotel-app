@@ -7,13 +7,11 @@ import { type AppType } from "next/app";
 
 const MyApp: AppType = ({ Component, pageProps }) => {
   return (
-    <>
-      <ClerkProvider {...pageProps}>
-        <Component {...pageProps} />
-        <Toaster />
-        <ReactQueryDevtools initialIsOpen={false} />
-      </ClerkProvider>
-    </>
+    <ClerkProvider {...pageProps}>
+      <Component {...pageProps} />
+      <Toaster />
+      <ReactQueryDevtools initialIsOpen={false} />
+    </ClerkProvider>
   );
 };
 

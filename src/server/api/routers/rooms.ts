@@ -1,10 +1,14 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import {
+  createTRPCRouter,
+  privateProcedure,
+  publicProcedure,
+} from "@/server/api/trpc";
 
 export const roomsRouter = createTRPCRouter({
   // get all posts for feed
-  getAll: publicProcedure.query(async ({ ctx }) => {
+  getAll: privateProcedure.query(async ({ ctx }) => {
     const rooms = await ctx.prisma.room.findMany({
       include: {
         reservations: true,
@@ -12,11 +16,10 @@ export const roomsRouter = createTRPCRouter({
       },
     });
     if (!rooms) throw new TRPCError({ code: "NOT_FOUND" });
-    console.log(rooms);
     return rooms;
   }),
 
-  getById: publicProcedure
+  getById: privateProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
       const room = await ctx.prisma.room.findUnique({
@@ -27,7 +30,7 @@ export const roomsRouter = createTRPCRouter({
       return room;
     }),
 
-  getAvailable: publicProcedure
+  getAvailable: privateProcedure
     .input(
       z.object({
         startDate: z.date(),
@@ -54,7 +57,7 @@ export const roomsRouter = createTRPCRouter({
       return availableRooms;
     }),
 
-  getVacanctRooms: publicProcedure.query(async ({ ctx }) => {
+  getVacanctRooms: privateProcedure.query(async ({ ctx }) => {
     const rooms = await ctx.prisma.room.findMany({
       where: {
         status: "VACANT",
@@ -64,7 +67,7 @@ export const roomsRouter = createTRPCRouter({
   }),
 
   // create new room
-  createRoom: publicProcedure
+  createRoom: privateProcedure
     .input(
       z.object({
         roomNumber: z.string(),
