@@ -6,6 +6,7 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -23,7 +24,7 @@ type MenuItemsWithChildren = MenuItem & { children?: MenuItem[] };
 
 const menuItems: MenuItemsWithChildren[] = [
   {
-    title: "Dashboard",
+    title: "Home",
     href: "/dashboard",
     description: "Main admin dashboard",
   },
@@ -61,17 +62,41 @@ const menuItems: MenuItemsWithChildren[] = [
   },
 ];
 
+const mobileMenu: MenuItem[] = [
+  {
+    title: "Home",
+    href: "/dashboard",
+    description: "Main admin dashboard",
+  },
+  {
+    title: "Bar & Kitchen",
+    href: "/orders",
+    description: "View and create orders for the bar.",
+  },
+];
+
 export function NavAdmin({}: React.HTMLAttributes<HTMLElement>) {
   const router = useRouter();
   const route = router.route;
   return (
-    <NavigationMenu className="flex items-center justify-between border-b px-8 py-4">
+    <NavigationMenu className="flex justify-between border px-4">
+      {/* LARGE VIEWPORTS ONLY */}
       <NavigationMenuList className="flex gap-2">
         {menuItems &&
           menuItems.map((item) => {
             return (
               <NavigationMenuItem key={item.title}>
-                {item.href && <Link href={item.href}>{item.title}</Link>}
+                {item.href && (
+                  <NavigationMenuItem>
+                    <Link href={item.href} legacyBehavior passHref>
+                      <NavigationMenuLink
+                        className={navigationMenuTriggerStyle()}
+                      >
+                        {item.title}
+                      </NavigationMenuLink>
+                    </Link>
+                  </NavigationMenuItem>
+                )}
                 {item.children && (
                   <>
                     <NavigationMenuTrigger>{item.title}</NavigationMenuTrigger>
@@ -94,6 +119,7 @@ export function NavAdmin({}: React.HTMLAttributes<HTMLElement>) {
             );
           })}
       </NavigationMenuList>
+
       <UserNav />
     </NavigationMenu>
   );
