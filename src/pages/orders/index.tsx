@@ -25,7 +25,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "@/components/ui/use-toast";
 import { cn, convertToNormalCase, isHappyHour } from "@/lib/utils";
 import { generateSSGHelper } from "@/server/helpers/ssgHelper";
 import { api } from "@/utils/api";
@@ -73,7 +72,19 @@ export default function OrdersPage() {
     });
 
   const { mutate: createOrder, isLoading: isAddingOrder } =
-    api.pos.createOrder.useMutation({});
+    api.pos.createOrder.useMutation({
+      onSuccess: () => resetAll(),
+    });
+
+  function resetAll() {
+    form.reset();
+    setSelectedCustomer({
+      customer: "",
+      reservationId: "",
+      guestId: "",
+    });
+    setSelectedItems([]);
+  }
 
   function handleAdd(item: Item) {
     const selectedItem = selectedItems.find(
@@ -108,16 +119,16 @@ export default function OrdersPage() {
       ...data,
       items: selectedItems,
     };
-    toast({
-      title: "Order data",
-      description: (
-        <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-          <code className="text-white">
-            {JSON.stringify(orderPayload, null, 2)}
-          </code>
-        </pre>
-      ),
-    });
+    // toast({
+    //   title: "Order data",
+    //   description: (
+    //     <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
+    //       <code className="text-white">
+    //         {JSON.stringify(orderPayload, null, 2)}
+    //       </code>
+    //     </pre>
+    //   ),
+    // });
     createOrder(orderPayload);
   }
 

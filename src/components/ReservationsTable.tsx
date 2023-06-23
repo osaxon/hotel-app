@@ -180,5 +180,12 @@ export function ReservationsTable() {
   if (isLoading) return <LoadingPage />;
   if (!reservations) return null;
 
-  return <DataTable data={reservations} columns={columns} />;
+  return (
+    <DataTable
+      filterColumn="guestName"
+      filterPlaceholder="Filter name"
+      data={reservations}
+      columns={columns}
+    />
+  );
 }

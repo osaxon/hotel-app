@@ -57,6 +57,11 @@ export const reservationsRouter = createTRPCRouter({
     return reservations;
   }),
 
+  getReservationItems: privateProcedure.query(async ({ ctx }) => {
+    const resItems = await ctx.prisma.reservationItem.findMany();
+    return resItems;
+  }),
+
   createReservation: privateProcedure
     .input(
       z.object({
@@ -65,6 +70,7 @@ export const reservationsRouter = createTRPCRouter({
         checkOut: z.date(),
         guestId: z.string().optional(),
         guestEmail: z.string().email(),
+        resItemId: z.string(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -78,11 +84,15 @@ export const reservationsRouter = createTRPCRouter({
             guest: {
               connect: { id: input.guestId },
             },
+            reservationItem: {
+              connect: { id: input.resItemId },
+            },
             guestEmail: input.guestEmail,
           },
           include: {
             room: true,
             guest: true,
+            reservationItem: true,
           },
         });
       } else {

@@ -18,12 +18,27 @@ model Room {
     roomName     String?
     roomType     RoomType            @default(STANDARD)
     status       RoomStatus          @default(VACANT)
+    variant      RoomVariant         @default(POOL_VIEW)
     capacity     Int
     reservations Reservation[]
     images       RoomImageRelation[]
 
     dailyRateUSD Decimal @default(20) @db.Decimal(10, 2)
     tasks        Task[]
+}
+
+model ReservationItem {
+    id             String      @id @default(cuid())
+    description    String
+    descForInvoice String?
+    roomType       RoomType    @default(STANDARD)
+    roomVariant    RoomVariant @default(POOL_VIEW)
+    boardType      BoardType   @default(NONE)
+    dailyRateUSD   Decimal     @db.Decimal(10, 2)
+    weeklyRate     Decimal?    @db.Decimal(10, 2)
+    monthlyRate    Decimal?    @db.Decimal(10, 2)
+
+    reservations Reservation[]
 }
 
 model RoomImage {
@@ -55,23 +70,35 @@ model Guest {
     reservations         Reservation[]
     currentReservationId String?
     orders               Order[]
+    invoices             Invoice[]
     type                 GuestType     @default(HOTEL)
 }
 
 model Reservation {
-    id        String            @id @default(cuid())
-    guest     Guest?            @relation(fields: [guestId], references: [id])
-    guestId   String?
-    userId    String?
-    room      Room?             @relation(fields: [roomId], references: [id])
-    roomId    String?           @unique
-    roomType  RoomType?         @default(STANDARD)
-    checkIn   DateTime
-    checkOut  DateTime
-    status    ReservationStatus @default(CONFIRMED)
-    createdAt DateTime          @default(now())
-    updatedAt DateTime?         @updatedAt
-    orders    Order[]
+    id String @id @default(cuid())
+
+    reservationItemId String?          @unique
+    reservationItem   ReservationItem? @relation(fields: [reservationItemId], references: [id])
+
+    guest   Guest?  @relation(fields: [guestId], references: [id])
+    guestId String?
+    userId  String?
+
+    room        Room?       @relation(fields: [roomId], references: [id])
+    roomId      String?     @unique
+    roomType    RoomType?   @default(STANDARD)
+    roomVariant RoomVariant @default(POOL_VIEW)
+
+    checkIn  DateTime
+    checkOut DateTime
+
+    status ReservationStatus @default(CONFIRMED)
+
+    createdAt     DateTime     @default(now())
+    updatedAt     DateTime?    @updatedAt
+    orders        Order[]
+    includedItems ItemOrders[]
+    roomRate      Decimal?     @db.Decimal(10, 2)
 
     // Basic guest information fields
     guestName  String
@@ -80,8 +107,44 @@ model Reservation {
     subTotalUSD   Decimal?      @db.Decimal(10, 2)
     paymentStatus PaymentStatus @default(UNPAID)
 
+    invoiceId String?  @unique
+    invoice   Invoice?
+
     @@index([roomId])
     @@index([guestId])
+    @@index([invoiceId])
+}
+
+model Invoice {
+    id            String        @id @default(cuid())
+    invoiceNumber String        @unique
+    lineItems     InvoiceItem[]
+    createdAt     DateTime      @default(now())
+    totalUSD      Decimal?      @db.Decimal(10, 2)
+
+    reservationId String?      @unique
+    reservation   Reservation? @relation(fields: [reservationId], references: [id])
+
+    customerName  String?
+    customerEmail String?
+
+    guestId String? @unique
+    guest   Guest?  @relation(fields: [guestId], references: [id])
+
+    @@index([reservationId])
+    @@index([guestId])
+}
+
+model InvoiceItem {
+    id           String  @id @default(cuid())
+    invoiceId    String
+    invoice      Invoice @relation(fields: [invoiceId], references: [id])
+    description  String
+    qty          Int
+    unitPriceUSD Decimal @db.Decimal(10, 2)
+    subTotalUSD  Decimal @db.Decimal(10, 2)
+
+    @@index([invoiceId])
 }
 
 model Task {
@@ -99,26 +162,33 @@ model Task {
 // ingredients represents the individual items used by an Item - e.g. for mixed drinks.
 // usedByItems represents the Items that uses Item as an ingredient.
 model Item {
-    id                String           @id @default(cuid())
-    name              String
-    priceUSD          Decimal          @db.Decimal(10, 2)
-    happyHourPriceUSD Decimal?         @db.Decimal(10, 2)
-    itemOrders        ItemOrders[]
-    category          ItemCategory
-    quantityInStock   Int              @default(0)
-    quantityUnit      String?
-    ingredients       ItemIngredient[] @relation("ItemIngredients")
-    usedByItems       ItemIngredient[] @relation("UsedByItems")
+    id       String       @id @default(cuid())
+    name     String
+    category ItemCategory
+
+    priceUSD          Decimal  @db.Decimal(10, 2)
+    happyHourPriceUSD Decimal? @db.Decimal(10, 2)
+    staffPriceUSD     Decimal? @db.Decimal(10, 2)
+    totalCostUSD      Decimal? @db.Decimal(10, 2)
+    costPerMeasureUSD Decimal? @db.Decimal(10, 2)
+
+    quantityInStock Decimal @default(0) @db.Decimal(10, 2)
+    quantityUnit    String? // The unit of measure e.g. ml, g
+
+    itemOrders ItemOrders[]
+
+    // For mixed items
+    ingredients ItemIngredient[] @relation("ItemIngredients")
+    usedByItems ItemIngredient[] @relation("UsedByItems")
 }
 
-// Each 
 model ItemIngredient {
     id           String   @id @default(cuid())
     name         String?
     parentItems  Item[]   @relation("ItemIngredients")
     ingredientId String?
     ingredient   Item?    @relation("UsedByItems", fields: [ingredientId], references: [id])
-    quantity     Decimal?
+    quantity     Decimal? @db.Decimal(10, 2)
     quantityUnit String?
 
     @@index([ingredientId])
@@ -144,20 +214,28 @@ model Order {
 }
 
 model ItemOrders {
-    id       String @id @default(cuid())
-    itemId   String
-    item     Item   @relation(fields: [itemId], references: [id])
-    orderId  String
-    order    Order  @relation(fields: [orderId], references: [id])
-    quantity Int    @default(1)
+    id            String       @id @default(cuid())
+    itemId        String
+    item          Item         @relation(fields: [itemId], references: [id])
+    orderId       String
+    order         Order        @relation(fields: [orderId], references: [id])
+    reservationId String?
+    reservation   Reservation? @relation(fields: [reservationId], references: [id])
+    quantity      Int          @default(1)
 
     @@index([orderId])
     @@index([itemId])
+    @@index([reservationId])
 }
 
 enum OrderStatus {
     PAID
     UNPAID
+}
+
+enum BoardType {
+    BREAKFAST
+    NONE
 }
 
 enum ReservationStatus {
@@ -173,11 +251,13 @@ enum ItemCategory {
     WINE
     SPIRITS
     PREMIUM_SPIRITS
+    MIXED_DRINKS
     COCKTAILS
     SNACKS
     FOOD
-    ENTERTAINMENT
+    TICKETS
     INGREDIENT
+    SERVICES
 }
 
 enum RoomType {
@@ -196,6 +276,11 @@ enum RoomStatus {
     OCCUPIED
     VACANT
     MAINTENANCE
+}
+
+enum RoomVariant {
+    POOL_VIEW
+    POOL_SIDE
 }
 
 enum PaymentStatus {

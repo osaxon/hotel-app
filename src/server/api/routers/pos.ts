@@ -12,7 +12,13 @@ import {
 } from "@prisma/client";
 import { isHappyHour } from "@/lib/utils";
 import { Decimal } from "@prisma/client/runtime";
-import { prisma } from "@/server/db";
+
+interface ItemToUpdate {
+  itemId: string | null;
+  itemName: string | undefined;
+  qtyToSubtract: Decimal | null;
+  qtyUnit: string | undefined;
+}
 
 function getSubTotal(
   items: { priceUSD: Prisma.Decimal; quantity: number }[]
@@ -178,6 +184,76 @@ export const posRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { name, items, guestId, reservationId } = input;
       let order;
+
+      // Extract the IDs from the items in the order
+      const itemIds = items.map((item) => item.itemId);
+
+      // Get Item data from the databse
+      const itemData = await ctx.prisma.item.findMany({
+        where: {
+          id: {
+            in: itemIds,
+          },
+        },
+        include: {
+          ingredients: {
+            include: {
+              ingredient: true,
+              parentItems: true,
+            },
+          },
+        },
+      });
+
+      // For stock updates we only need the stock tracked Items - parent items are removed
+      const parentItems = itemData.filter(
+        (item) => item.ingredients.length > 0
+      );
+
+      // This is for mixed items - checks how much to subtract from the Items used as ingredients
+      // If more than one mixed item is ordered - checks how many of the items are on the order and calculates total to subtract
+      const itemIngredientsToUpdate: ItemToUpdate[] = [];
+      for (const item of itemData) {
+        const itemQuantities: Record<string, number> = {};
+
+        for (const orderItem of items) {
+          if (orderItem.itemId === item.id) {
+            const quantity = itemQuantities[item.id] || 0;
+            itemQuantities[item.id] = quantity + orderItem.quantity;
+          }
+        }
+
+        for (const ingredient of item.ingredients) {
+          const quantityToUpdate =
+            ingredient.quantity !== null && ingredient.quantity !== undefined
+              ? Number(ingredient.quantity) * (itemQuantities[item.id] || 0)
+              : 0;
+          const itemToUpdate: ItemToUpdate = {
+            itemId: ingredient.ingredientId ?? "",
+            itemName: ingredient.ingredient?.name ?? "",
+            qtyToSubtract: new Decimal(quantityToUpdate),
+            qtyUnit: ingredient.quantityUnit ?? "",
+          };
+
+          itemIngredientsToUpdate.push(itemToUpdate);
+        }
+      }
+
+      // This is for all other Items to be updated
+      const itemsToUpdate = items.filter((ogItem) => {
+        const isIngredientItem = itemIngredientsToUpdate.some(
+          (updatedItem) => updatedItem.itemId === ogItem.itemId
+        );
+        const isParentItem = parentItems.some(
+          (updatedItem) => updatedItem.id === ogItem.itemId
+        );
+        return !isIngredientItem && !isParentItem;
+      });
+
+      console.log(itemIngredientsToUpdate);
+      console.log(itemsToUpdate);
+
+      // For Hotel Guest with an active reservation, link the order to current booking
       if (guestId && reservationId) {
         order = await ctx.prisma.order.create({
           data: {
@@ -203,6 +279,7 @@ export const posRouter = createTRPCRouter({
             items: true,
           },
         });
+        // For outside guests or guests with no active reservation, link to Guest record
       } else if (guestId && !reservationId) {
         order = await ctx.prisma.order.create({
           data: {
@@ -225,6 +302,7 @@ export const posRouter = createTRPCRouter({
             items: true,
           },
         });
+        // For everyone else...
       } else {
         order = await ctx.prisma.order.create({
           data: {
