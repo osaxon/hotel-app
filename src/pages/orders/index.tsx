@@ -3,7 +3,7 @@ import { type GetServerSideProps } from "next";
 import { useState } from "react";
 
 import AdminLayout from "@/components/LayoutAdmin";
-import { OrdersTable } from "@/components/OrdersTable";
+import { OpenInvoicesTable } from "@/components/OpenInvoicesTable";
 import LoadingSpinner, { LoadingPage } from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,26 +26,23 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, convertToNormalCase, isHappyHour } from "@/lib/utils";
+import { type ItemWithQuantity } from "@/server/api/routers/pos";
 import { generateSSGHelper } from "@/server/helpers/ssgHelper";
 import { api } from "@/utils/api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type Item } from "@prisma/client";
-import dayjs from "dayjs";
 import { useForm } from "react-hook-form";
+import { toast } from "react-hot-toast";
 import { z } from "zod";
 
 type SelectedItem = {
-  itemName: string;
   itemId: string;
   quantity: number;
-  priceUSD: string;
-  happyHourPriceUSD: string;
 };
 
 type SelectedCustomer = {
   customer: string | null;
   reservationId: string | null;
-  guestId: string | null;
 };
 
 const FormSchema = z.object({
@@ -53,10 +50,11 @@ const FormSchema = z.object({
   name: z.string().optional(),
   reservationId: z.string().optional(),
   guestId: z.string().optional(),
+  invoiceId: z.string().optional(),
 });
 
 export default function OrdersPage() {
-  const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+  const [selectedItems, setSelectedItems] = useState<ItemWithQuantity[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<SelectedCustomer>();
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -71,6 +69,9 @@ export default function OrdersPage() {
       refetchOnWindowFocus: true,
     });
 
+  const { data: invoices, isLoading: isLoadingInvoices } =
+    api.pos.getOpenInvoices.useQuery();
+
   const { mutate: createOrder, isLoading: isAddingOrder } =
     api.pos.createOrder.useMutation({
       onSuccess: () => resetAll(),
@@ -81,19 +82,18 @@ export default function OrdersPage() {
     setSelectedCustomer({
       customer: "",
       reservationId: "",
-      guestId: "",
     });
     setSelectedItems([]);
   }
 
   function handleAdd(item: Item) {
     const selectedItem = selectedItems.find(
-      (selectedItem) => selectedItem.itemId === item.id
+      (selectedItem) => selectedItem.id === item.id
     );
 
     if (selectedItem) {
       const updatedItems = selectedItems.map((selectedItem) => {
-        if (selectedItem.itemId === item.id) {
+        if (selectedItem.id === item.id) {
           return { ...selectedItem, quantity: selectedItem.quantity + 1 };
         }
         return selectedItem;
@@ -104,11 +104,8 @@ export default function OrdersPage() {
       setSelectedItems([
         ...selectedItems,
         {
-          itemName: item.name,
-          itemId: item.id,
+          ...item,
           quantity: 1,
-          priceUSD: item.priceUSD.toString(),
-          happyHourPriceUSD: item.happyHourPriceUSD?.toString() || "",
         },
       ]);
     }
@@ -119,20 +116,34 @@ export default function OrdersPage() {
       ...data,
       items: selectedItems,
     };
-    // toast({
-    //   title: "Order data",
-    //   description: (
-    //     <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-    //       <code className="text-white">
-    //         {JSON.stringify(orderPayload, null, 2)}
-    //       </code>
-    //     </pre>
-    //   ),
-    // });
+
+    toast.custom((t) => (
+      <div
+        className={`${
+          t.visible ? "animate-enter" : "animate-leave"
+        } pointer-events-auto flex w-full max-w-md rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5`}
+      >
+        <div className="w-0 flex-1 p-4">
+          <div className="flex items-start">
+            {JSON.stringify(orderPayload, null, 2)}
+          </div>
+        </div>
+        <div className="flex border-l border-gray-200">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="flex w-full items-center justify-center rounded-none rounded-r-lg border border-transparent p-4 text-sm font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    ));
+
     createOrder(orderPayload);
   }
 
-  if (isLoadingItems || isLoadingGuests) return <LoadingPage />;
+  if (isLoadingItems || isLoadingGuests || isLoadingInvoices)
+    return <LoadingPage />;
 
   return (
     <AdminLayout>
@@ -147,7 +158,7 @@ export default function OrdersPage() {
           <Tabs defaultValue="items" className="space-y-4">
             <TabsList>
               <TabsTrigger value="items">Items</TabsTrigger>
-              <TabsTrigger value="open-orders">Open Orders</TabsTrigger>
+              <TabsTrigger value="open-tabs">Open Tabs</TabsTrigger>
             </TabsList>
             <TabsContent value="items" className="space-y-4">
               <div className="flex items-center justify-between space-y-2">
@@ -164,7 +175,7 @@ export default function OrdersPage() {
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     {items.map((item) => {
                       const selectedItem = selectedItems.find(
-                        (selectedItem) => selectedItem.itemId === item.id
+                        (selectedItem) => selectedItem.id === item.id
                       );
                       return (
                         <Card
@@ -216,7 +227,7 @@ export default function OrdersPage() {
               )}
 
               {/* GUEST SELECTION GRID */}
-              <section className="flex-1 space-y-4 pt-6">
+              {/* <section className="flex-1 space-y-4 pt-6">
                 <div className="flex items-center justify-between space-y-2">
                   <h3 className="text-2xl font-bold tracking-tight">
                     Select Guest for bill
@@ -295,6 +306,33 @@ export default function OrdersPage() {
                         );
                       })}
                 </div>
+              </section> */}
+
+              <section className="flex-1 space-y-4 pt-6">
+                <div className="flex items-center justify-between space-y-2">
+                  <h3 className="text-2xl font-bold tracking-tight">
+                    Add to Invoice
+                  </h3>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  {invoices &&
+                    invoices.map((invoice) => (
+                      <div
+                        onClick={() => {
+                          form.setValue("invoiceId", invoice.id);
+                          form.setValue("name", invoice.customerName ?? "");
+                          form.setValue("guestId", invoice.guest?.id ?? "");
+                        }}
+                        key={invoice.id}
+                        className="flex flex-col"
+                      >
+                        <div>{invoice.customerName}</div>
+                        {invoice.reservation && (
+                          <div>Room {invoice.reservation.room?.roomNumber}</div>
+                        )}
+                      </div>
+                    ))}
+                </div>
               </section>
 
               <div>
@@ -335,37 +373,39 @@ export default function OrdersPage() {
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="guestId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xl font-bold">
-                            Guest ID
-                          </FormLabel>
-                          <FormControl>
-                            <Input type="text" {...field} readOnly disabled />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="reservationId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xl font-bold">
-                            Reservation ID
-                          </FormLabel>
-                          <FormControl>
-                            <Input type="text" {...field} readOnly disabled />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {/* HIDDEN FROM UI BUT VALUES ARE NEEDED TO SEND TO API */}
+                    <div className="hidden">
+                      <FormField
+                        control={form.control}
+                        name="invoiceId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xl font-bold">
+                              Invoice ID
+                            </FormLabel>
+                            <FormControl>
+                              <Input type="text" {...field} readOnly disabled />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="guestId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xl font-bold">
+                              Guest ID
+                            </FormLabel>
+                            <FormControl>
+                              <Input type="text" {...field} readOnly disabled />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
                     <div className="flex gap-2">
                       <Button type="submit">Submit</Button>
@@ -376,7 +416,6 @@ export default function OrdersPage() {
                           setSelectedCustomer({
                             customer: "",
                             reservationId: "",
-                            guestId: "",
                           });
                           form.reset();
                         }}
@@ -405,14 +444,14 @@ export default function OrdersPage() {
                     </TableHeader>
                     <TableBody>
                       {selectedItems.map((item) => (
-                        <TableRow key={item.itemId}>
+                        <TableRow key={item.id}>
                           <TableCell className="font-medium">
-                            {item.itemName}
+                            {item.name}
                           </TableCell>
                           <TableCell>x {item.quantity}</TableCell>
                           <TableCell>
                             $
-                            {isHappyHour()
+                            {isHappyHour() && item.happyHourPriceUSD
                               ? item.happyHourPriceUSD.toString()
                               : item.priceUSD.toString()}
                           </TableCell>
@@ -430,8 +469,8 @@ export default function OrdersPage() {
               </section>
             </TabsContent>
 
-            <TabsContent value="open-orders" className="space-y-4">
-              <OrdersTable />
+            <TabsContent value="open-tabs" className="space-y-4">
+              <OpenInvoicesTable />
             </TabsContent>
           </Tabs>
         </main>

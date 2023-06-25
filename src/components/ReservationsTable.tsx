@@ -13,7 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { api } from "@/utils/api";
-import { ReservationStatus, type Reservation } from "@prisma/client";
+import { Prisma, ReservationStatus } from "@prisma/client";
 import { type ColumnDef } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import {
@@ -29,7 +29,9 @@ import DataTable from "./DataTable";
 import { LoadingPage } from "./loading";
 import { Button } from "./ui/button";
 
-export const columns: ColumnDef<Reservation>[] = [
+export const columns: ColumnDef<
+  Prisma.ReservationGetPayload<{ include: { invoice: true } }>
+>[] = [
   {
     accessorKey: "id",
     header: () => <div className="">Reservation ID</div>,
@@ -140,9 +142,10 @@ export const columns: ColumnDef<Reservation>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
       const status = row.getValue("status");
       const id: string = row.getValue("id");
+      const invoiceNumber: string = row.original.invoice?.invoiceNumber ?? "";
 
       return (
         <DropdownMenu>
@@ -161,9 +164,18 @@ export const columns: ColumnDef<Reservation>[] = [
               </DropdownMenuItem>
             )}
             {status !== "CONFIRMED" && (
-              <DropdownMenuItem>
-                <Link href={`/check-out/${id}`}>Check Out</Link>
-              </DropdownMenuItem>
+              <>
+                <DropdownMenuItem>
+                  <Link href={`/check-out/${id}`}>Check Out</Link>
+                </DropdownMenuItem>
+                {invoiceNumber && (
+                  <DropdownMenuItem>
+                    <Link href={`/invoices/${invoiceNumber}`}>
+                      View Invoice
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+              </>
             )}
             <DropdownMenuItem>View Order Details</DropdownMenuItem>
           </DropdownMenuContent>

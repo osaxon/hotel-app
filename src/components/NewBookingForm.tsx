@@ -25,21 +25,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn, getDurationOfStay, getRateTotal } from "@/lib/utils";
+import { useReservationStore } from "@/store/reservationStore";
 import { api } from "@/utils/api";
 import { zodResolver } from "@hookform/resolvers/zod";
-import dayjs from "dayjs";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-
-import { cn } from "@/lib/utils";
-import { useReservationStore } from "@/store/reservationStore";
 import { ReservationItem, type Reservation } from "@prisma/client";
-import { ToastAction } from "@radix-ui/react-toast";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import { LoadingPage } from "./loading";
 import {
   Command,
@@ -86,7 +82,10 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
     data: resItems,
     isLoading: isLoadingResItems,
     isError: isResItemsError,
-  } = api.reservations.getReservationItems.useQuery();
+  } = api.reservations.getReservationItems.useQuery(undefined, {
+    keepPreviousData: true,
+    refetchOnWindowFocus: false,
+  });
 
   const { mutate: createReservation } =
     api.reservations.createReservation.useMutation({
@@ -144,9 +143,7 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
 
   useEffect(() => {
     if (checkIn && checkOut) {
-      const startDate = dayjs(checkIn);
-      const endDate = dayjs(checkOut);
-      const durationInDays = endDate.diff(startDate, "day");
+      const durationInDays = getDurationOfStay(checkIn, checkOut);
       setDuration(durationInDays);
     } else {
       setDuration(undefined); // Reset duration if checkIn or checkOut is not set
@@ -154,7 +151,7 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
   }, [checkIn, checkOut]);
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    // createReservation(data);
+    createReservation(data);
 
     // toast({
     //   title: "The data:",
@@ -165,18 +162,18 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
     //   ),
     // });
 
-    toast({
-      title: "New Reservation",
-      description: (
-        <div className="flex justify-between">
-          <Check />
-          <p>Reservation added</p>
-        </div>
-      ),
-      action: (
-        <ToastAction altText="Go to check-in">Go to Check In</ToastAction>
-      ),
-    });
+    // toast({
+    //   title: "New Reservation",
+    //   description: (
+    //     <div className="flex justify-between">
+    //       <Check />
+    //       <p>Reservation added</p>
+    //     </div>
+    //   ),
+    //   action: (
+    //     <ToastAction altText="Go to check-in">Go to Check In</ToastAction>
+    //   ),
+    // });
   }
 
   if (isLoadingGuests || isLoadingGuests || isLoadingResItems)
@@ -483,19 +480,15 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
             <TableHead className="text-right">Amount</TableHead>
           </TableRow>
         </TableHeader>
-        {reservationSummary && (
+        {reservationSummary && duration && (
           <TableBody>
             <TableRow>
               <TableCell>{reservationSummary.description}</TableCell>
               <TableCell>
-                {duration} nights @ $
-                {reservationSummary.dailyRateUSD.toString()}
+                {getRateTotal(duration, reservationSummary).desc}
               </TableCell>
               <TableCell className="text-right">
-                $
-                {duration
-                  ? Number(reservationSummary.dailyRateUSD) * duration
-                  : "xx"}
+                ${getRateTotal(duration, reservationSummary).value}
               </TableCell>
             </TableRow>
           </TableBody>
