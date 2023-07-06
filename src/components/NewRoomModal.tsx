@@ -40,41 +40,6 @@ export default function NewRoomModal() {
     resolver: zodResolver(FormSchema),
   });
 
-  //   const { mutate: addRoom } = api.rooms.createRoom.useMutation({
-  //     onSuccess: (data) => {
-  //       toast({
-  //         title: "You submitted the following values:",
-  //         description: (
-  //           <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-  //             <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-  //           </pre>
-  //         ),
-  //       });
-  //     },
-  //     onMutate: (variables) => {
-  //       toast({
-  //         title: "You submitted the following values:",
-  //         description: (
-  //           <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-  //             <code className="text-white">
-  //               {JSON.stringify(variables, null, 2)}
-  //             </code>
-  //           </pre>
-  //         ),
-  //       });
-  //     },
-  //     onError: (error) => {
-  //       toast({
-  //         title: "There's been an error:",
-  //         description: (
-  //           <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-  //             <code className="text-white">{JSON.stringify(error, null, 2)}</code>
-  //           </pre>
-  //         ),
-  //       });
-  //     },
-  //   });
-
   function onSubmit(data: z.infer<typeof FormSchema>) {
     toast({
       title: "The data:",

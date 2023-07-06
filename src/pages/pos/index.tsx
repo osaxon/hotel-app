@@ -32,7 +32,6 @@ import { api } from "@/utils/api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type Item } from "@prisma/client";
 import { useForm } from "react-hook-form";
-import { toast } from "react-hot-toast";
 import { z } from "zod";
 
 type SelectedItem = {
@@ -116,28 +115,6 @@ export default function OrdersPage() {
       ...data,
       items: selectedItems,
     };
-
-    toast.custom((t) => (
-      <div
-        className={`${
-          t.visible ? "animate-enter" : "animate-leave"
-        } pointer-events-auto flex w-full max-w-md rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5`}
-      >
-        <div className="w-0 flex-1 p-4">
-          <div className="flex items-start">
-            {JSON.stringify(orderPayload, null, 2)}
-          </div>
-        </div>
-        <div className="flex border-l border-gray-200">
-          <button
-            onClick={() => toast.dismiss(t.id)}
-            className="flex w-full items-center justify-center rounded-none rounded-r-lg border border-transparent p-4 text-sm font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    ));
 
     createOrder(orderPayload);
   }

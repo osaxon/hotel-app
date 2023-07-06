@@ -56,6 +56,10 @@ export default function CheckOutForm({
   const { mutate: calculatefinal } =
     api.reservations.calculateSubTotal.useMutation();
 
+  const { data: aggregate } = api.reservations.aggOrderTotal.useQuery({
+    resId: reservationData.id,
+  });
+
   function onSubmit(data: z.infer<typeof FormSchema>) {
     calculatefinal({
       reservationId: data.reservationId,
@@ -77,6 +81,7 @@ export default function CheckOutForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="w-full space-y-6">
+        {JSON.stringify(aggregate)}
         <FormField
           control={form.control}
           name="roomNumber"

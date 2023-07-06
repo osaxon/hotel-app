@@ -16,6 +16,7 @@ export const env = createEnv({
     CLOUD_API_KEY: z.string(),
     CLOUD_API_SECRET: z.string(),
     CLERK_ADMIN_ORG: z.string(),
+    RESEND_API_KEY: z.string(),
   },
 
   /**
@@ -47,6 +48,7 @@ export const env = createEnv({
     NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME:
       process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
     CLERK_ADMIN_ORG: process.env.CLERK_ADMIN_ORG,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation.

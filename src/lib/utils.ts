@@ -46,20 +46,55 @@ export function getRateTotal(duration: number, resItem: ReservationItem) {
     };
     // Monthly rate
   } else if (duration >= 28) {
+    const rate = Number(resItem.monthlyRate) / 28;
+    const total = rate * duration;
+    const formattedTotal = formatCurrency({ amount: total });
+    const formattedMonthlyRate = formatCurrency({
+      amount: Number(resItem.monthlyRate),
+    });
+
     return {
-      desc: `${duration} nts @ MONTHLY rate.`,
-      value: Number(resItem.monthlyRate),
+      desc: `${duration} nts @ MONTHLY rate of ${formattedMonthlyRate}`,
+      value: rate * duration,
+      formatted: formattedTotal,
     };
     // Weekly rate
   } else if (duration >= 7) {
+    const rate = Number(resItem.weeklyRate) / 7;
+    const total = Number(rate * duration);
+    const formattedTotal = formatCurrency({ amount: total });
+    const formattedWeeklyRate = formatCurrency({
+      amount: Number(resItem.weeklyRate),
+    });
     return {
-      desc: `${duration} nts @ WEEKLY rate.`,
-      value: Number(resItem.weeklyRate),
+      desc: `${duration} nts @ WEEKLY rate of ${formattedWeeklyRate}`,
+      value: Number(rate * duration),
+      formatted: formattedTotal,
     };
   } else {
+    const formattedRate = formatCurrency({
+      amount: Number(resItem.dailyRateUSD),
+    });
+    const formattedTotal = formatCurrency({
+      amount: Number(resItem.dailyRateUSD) * duration,
+    });
     return {
-      desc: `${duration} nts @ $${resItem.dailyRateUSD.toString()}.`,
+      desc: `${duration} nts @ ${formattedRate}.`,
       value: Number(resItem.dailyRateUSD) * duration,
+      formatted: formattedTotal,
     };
   }
+}
+
+export function formatCurrency({
+  amount,
+  currency = "USD",
+}: {
+  amount: number;
+  currency?: string;
+}): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency || "USD",
+  }).format(amount);
 }

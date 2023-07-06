@@ -3,8 +3,6 @@ import AdminLayout from "@/components/LayoutAdmin";
 import { Overview } from "@/components/Overview";
 import { RecentSales } from "@/components/RecentSales";
 import UpcomingReservationsCard from "@/components/UpcomingReservationsCard";
-import LoadingSpinner from "@/components/loading";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -17,9 +15,42 @@ import { generateSSGHelper } from "@/server/helpers/ssgHelper";
 import { api } from "@/utils/api";
 import clerkClient from "@clerk/clerk-sdk-node";
 import { buildClerkProps, getAuth } from "@clerk/nextjs/server";
-import { BedDouble } from "lucide-react";
+import { BedDouble, Beer, Calculator, Receipt, Users } from "lucide-react";
 import { type GetServerSideProps } from "next";
 import Link from "next/link";
+
+const menuItems = [
+  {
+    label: "Bar",
+    href: "/pos",
+    desc: "Create orders for the bar & kitchen.",
+    icon: Beer,
+  },
+  {
+    label: "Inventory",
+    href: "/items",
+    desc: "View item stock levels. Manage items for sale.",
+    icon: Calculator,
+  },
+  {
+    label: "Rooms & Bookings",
+    href: "/reservations",
+    desc: "View & create reservations for guests. Manage reservation types. Manage rooms.",
+    icon: BedDouble,
+  },
+  {
+    label: "Invoices",
+    href: "/invoices",
+    desc: "View invoices for guests and accounts.",
+    icon: Receipt,
+  },
+  {
+    label: "Accounts",
+    href: "/accounts",
+    desc: "Create & manage accounts for guests and staff.",
+    icon: Users,
+  },
+];
 
 export default function DashboardPage() {
   const {
@@ -37,14 +68,14 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between space-y-2">
             <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           </div>
-          <Tabs defaultValue={"overview"} className="space-y-4">
+          <Tabs defaultValue={"menu"} className="space-y-4">
             <TabsList>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="bar">Bar</TabsTrigger>
+              <TabsTrigger value="menu">Menu</TabsTrigger>
+              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             </TabsList>
 
             {/* Overview tab */}
-            <TabsContent value="overview" className="space-y-4">
+            <TabsContent value="dashboard" className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <CurrentGuestsCard />
                 <UpcomingReservationsCard />
@@ -70,39 +101,24 @@ export default function DashboardPage() {
               </div>
             </TabsContent>
 
-            {/* Rooms tab */}
-            <TabsContent value="rooms" className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {rooms &&
-                  rooms.map((room) => (
-                    <Link key={room.id} href={`/room/${room.id}`}>
-                      <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                          <CardTitle className="flex flex-col">
-                            <span className="text-2xl">{room.roomName}</span>
+            <TabsContent value="menu" className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+                {menuItems &&
+                  menuItems.map((item) => (
+                    <Link key={item.href} href={item.href}>
+                      <Card className="h-full">
+                        <CardHeader>
+                          <CardTitle className="flex items-center justify-between">
+                            {item.label}
+                            {<item.icon />}
                           </CardTitle>
-
-                          <CardDescription>
-                            <Badge>{room.roomType}</Badge>
-                          </CardDescription>
                         </CardHeader>
-                        <CardContent className="flex flex-col gap-y-4">
-                          <span className="text-sm font-medium text-muted-foreground">
-                            Room {room.roomNumber}
-                          </span>
-                          <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                            <BedDouble size={18} />
-                            {room.capacity}
-                          </span>
+                        <CardContent>
+                          <p>{item.desc}</p>
                         </CardContent>
                       </Card>
                     </Link>
                   ))}
-                {isLoadingRooms && (
-                  <Card className="border border-dashed">
-                    <LoadingSpinner />
-                  </Card>
-                )}
               </div>
             </TabsContent>
           </Tabs>

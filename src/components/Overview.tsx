@@ -58,7 +58,9 @@ export function Overview() {
           dataKey="total"
           fill="#adfa1d"
           radius={[4, 4, 0, 0]}
-          onClick={(_data: unknown, _i: number) => router.replace(`/bookings/`)}
+          onClick={(_data: unknown, _i: number) =>
+            router.replace(`/reservations`)
+          }
         />
       </BarChart>
     </ResponsiveContainer>

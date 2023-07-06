@@ -69,6 +69,15 @@ export const reservationsRouter = createTRPCRouter({
     return resItems;
   }),
 
+  getResItemById: privateProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const resItem = await ctx.prisma.reservationItem.findUnique({
+        where: { id: input.id },
+      });
+      return resItem;
+    }),
+
   createReservation: privateProcedure
     .input(
       z.object({
@@ -78,6 +87,7 @@ export const reservationsRouter = createTRPCRouter({
         guestId: z.string().optional(),
         guestEmail: z.string().email(),
         resItemId: z.string(),
+        subTotalUSD: z.number().positive().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -95,7 +105,7 @@ export const reservationsRouter = createTRPCRouter({
         });
       }
 
-      const rateTotal = getRateTotal(durationInDays, resItem);
+      //   const rateTotal = getRateTotal(durationInDays, resItem);
 
       // If we already have the Guest details stored
       if (input.guestId) {
@@ -110,7 +120,7 @@ export const reservationsRouter = createTRPCRouter({
             reservationItem: {
               connect: { id: input.resItemId },
             },
-            subTotalUSD: rateTotal.value,
+            subTotalUSD: input.subTotalUSD,
             guestEmail: input.guestEmail,
           },
           include: {
@@ -134,7 +144,7 @@ export const reservationsRouter = createTRPCRouter({
             reservationItem: {
               connect: { id: input.resItemId },
             },
-            subTotalUSD: rateTotal.value,
+            subTotalUSD: input.subTotalUSD,
             guestEmail: input.guestEmail,
           },
           include: {
@@ -187,6 +197,7 @@ export const reservationsRouter = createTRPCRouter({
               },
             },
           },
+          reservationItem: true,
           guest: {
             include: {
               orders: {
@@ -241,18 +252,24 @@ export const reservationsRouter = createTRPCRouter({
       const formattedInvoiceNumber = invoiceNumber.toString().padStart(6, "0");
 
       const reservation: Prisma.ReservationGetPayload<{
-        include: { reservationItem: true };
+        include: { reservationItem: true; guest: true };
       }> = await ctx.prisma.reservation.update({
         where: { id: input.reservationId },
         data: {
           status: ReservationStatus.CHECKED_IN,
 
           guest: {
-            create: {
-              email: input.guestEmail,
-              firstName: input.firstName,
-              surname: input.surname,
-              currentReservationId: input.reservationId,
+            connectOrCreate: {
+              where: {
+                email: input.guestEmail,
+              },
+              create: {
+                firstName: input.firstName,
+                surname: input.surname,
+                fullName: `${input.firstName} ${input.surname}`,
+                currentReservationId: input.reservationId,
+                email: input.guestEmail,
+              },
             },
           },
 
@@ -311,27 +328,24 @@ export const reservationsRouter = createTRPCRouter({
           reservation: {
             connect: { id: reservation.id },
           },
+          totalUSD: rateTotal.value,
           guest: {
             connect: {
               id: reservation.guestId,
             },
           },
-
-          // -- START -- DON'T ADD THIS YET AS CHECKOUT COULD CHANGE
-          //   lineItems: {
-          //     create: {
-          //       description: rateTotal.desc,
-          //       qty: durationInDays,
-          //       unitPriceUSD: rateTotal.value / durationInDays,
-          //       subTotalUSD: rateTotal.value,
-          //     },
-          //   },
-          //   totalUSD: rateTotal.value,
-          // -- END --
         },
         include: {
-          lineItems: true,
           reservation: true,
+          orders: {
+            include: {
+              items: {
+                include: {
+                  item: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -361,25 +375,76 @@ export const reservationsRouter = createTRPCRouter({
       // Fetch the Reservation and include the associated Room
       const reservation = await ctx.prisma.reservation.findUnique({
         where: { id: input.reservationId },
-        include: { room: true },
+        include: { room: true, reservationItem: true, invoice: true },
       });
 
       if (!reservation) {
         throw new Error("Reservation not found");
       }
 
-      const dailyRate = reservation.room?.dailyRateUSD?.toString();
-      const subTotal = dailyRate ? parseFloat(dailyRate) * totalDays : 0;
+      // Retrieve the Invoice for the reservation
+      const invoice = await ctx.prisma.invoice.findUnique({
+        where: { id: reservation?.invoice?.id },
+      });
+
+      const orderAggregate = await ctx.prisma.order.aggregate({
+        where: {
+          reservation: {
+            id: reservation.id,
+          },
+        },
+        _sum: {
+          subTotalUSD: true,
+        },
+      });
+
+      let subTotal;
+      if (
+        totalDays >= 28 &&
+        reservation.reservationItem?.monthlyRate !== null
+      ) {
+        subTotal =
+          (Number(reservation.reservationItem?.monthlyRate) / 28) * totalDays;
+      } else if (
+        totalDays >= 7 &&
+        totalDays < 28 &&
+        reservation.reservationItem?.weeklyRate !== null
+      ) {
+        subTotal =
+          (Number(reservation.reservationItem?.weeklyRate) / 7) * totalDays;
+      } else {
+        subTotal =
+          Number(reservation.reservationItem?.dailyRateUSD) * totalDays;
+      }
 
       const updatedReservation = await ctx.prisma.reservation.update({
         where: { id: input.reservationId },
         data: {
-          subTotalUSD: new Decimal(subTotal),
+          subTotalUSD: subTotal,
           status: ReservationStatus.FINAL_BILL,
+        },
+        include: {
+          invoice: true,
         },
       });
 
       return updatedReservation;
+    }),
+
+  aggOrderTotal: privateProcedure
+    .input(z.object({ resId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const aggregatedOrder = await ctx.prisma.order.aggregate({
+        where: {
+          reservation: {
+            id: input.resId,
+          },
+        },
+        _sum: {
+          subTotalUSD: true,
+        },
+      });
+      return aggregatedOrder;
     }),
 
   checkOut: privateProcedure
@@ -422,6 +487,7 @@ export const reservationsRouter = createTRPCRouter({
       include: {
         room: true,
         guest: true,
+        reservationItem: true,
         invoice: {
           include: {
             lineItems: true,

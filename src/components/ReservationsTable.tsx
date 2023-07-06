@@ -30,7 +30,9 @@ import { LoadingPage } from "./loading";
 import { Button } from "./ui/button";
 
 export const columns: ColumnDef<
-  Prisma.ReservationGetPayload<{ include: { invoice: true } }>
+  Prisma.ReservationGetPayload<{
+    include: { invoice: true; reservationItem: true };
+  }>
 >[] = [
   {
     accessorKey: "id",
@@ -92,10 +94,23 @@ export const columns: ColumnDef<
     accessorKey: "guest.email",
     header: "Email",
   },
+
   {
-    accessorKey: "roomType",
-    header: "Room Type",
+    accessorKey: "reservationItem.description",
+    header: "Reservation Class",
+    cell: ({ row }) => {
+      const resItemId: string = row.original.reservationItem?.id || "";
+      const resItemDesc: string =
+        row.original.reservationItem?.description || "";
+
+      return (
+        <Link href={`/res-item/${resItemId}`}>
+          <Button>{resItemDesc}</Button>
+        </Link>
+      );
+    },
   },
+
   {
     accessorKey: "status",
     header: "Status",

@@ -1,6 +1,8 @@
 import Invoice from "@/components/Invoice";
 import AdminLayout from "@/components/LayoutAdmin";
 import { LoadingPage } from "@/components/loading";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { api } from "@/utils/api";
 import dayjs from "dayjs";
 import advancedFormat from "dayjs/plugin/advancedFormat";
@@ -17,10 +19,10 @@ const InvoicePage: NextPage = () => {
 
   if (!invoiceNumber) return <>No invoice number</>;
 
-  const { data: invoice, isLoading } = api.pos.getInvoiceByNumber.useQuery(
-    { invoiceNumber: invoiceNumber },
-    { staleTime: Infinity }
-  );
+  const { data: invoice, isLoading } = api.pos.getInvoiceByNumber.useQuery({
+    invoiceNumber: invoiceNumber,
+  });
+  const { mutate: markAsPaid } = api.pos.markInvoiceAsPaid.useMutation();
 
   if (isLoading) return <LoadingPage />;
   if (!invoice) return <>No data found</>;
@@ -44,6 +46,22 @@ const InvoicePage: NextPage = () => {
             <p className="text-lg font-semibold">
               {dayjs(invoice.createdAt).format("Do MMM YYYY")}
             </p>
+            <p className="text-lg font-semibold">Invoice Total</p>
+            <p className="text-lg font-semibold">
+              {new Intl.NumberFormat("en-us", {
+                style: "currency",
+                currency: "USD",
+              }).format(Number(invoice.totalUSD))}
+            </p>
+            <p className="text-lg font-semibold">Status</p>
+            <Badge className="inline-flex justify-center">
+              {invoice.status}
+            </Badge>
+          </div>
+          <div className="my-4 flex gap-4">
+            <Button onClick={() => markAsPaid({ id: invoice.id })}>
+              Mark as Paid
+            </Button>
           </div>
           <div className="my-4">
             <h3 className="font-bold">Items:</h3>

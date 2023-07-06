@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn, getDurationOfStay, getRateTotal } from "@/lib/utils";
+import { cn, formatCurrency, getDurationOfStay } from "@/lib/utils";
 import { useReservationStore } from "@/store/reservationStore";
 import { api } from "@/utils/api";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +33,7 @@ import { ReservationItem, type Reservation } from "@prisma/client";
 import { format } from "date-fns";
 import { CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -61,6 +62,13 @@ const FormSchema = z.object({
   guestId: z.string().optional(),
   checkIn: z.date(),
   checkOut: z.date(),
+  subTotalUSD: z
+    .string()
+    .refine((value) => !isNaN(parseFloat(value)), {
+      message: "Total must be a valid number.",
+      path: ["subTotalUSD"],
+    })
+    .transform((value) => parseFloat(value)),
 });
 
 export default function NewBookingForm({}: { reservationData?: Reservation }) {
@@ -71,6 +79,7 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
   );
   const [duration, setDuration] = useState<number | undefined>(undefined);
   const toggle = useReservationStore((state) => state.toggleResItem);
+  const router = useRouter();
 
   const {
     data: guests,
@@ -90,16 +99,18 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
   const { mutate: createReservation } =
     api.reservations.createReservation.useMutation({
       onSuccess: (data) => {
-        toast({
-          title: "New Reservation",
-          description: (
-            <div className="flex justify-between">
-              <Check />
-              <p>Reservation added</p>
-            </div>
-          ),
-          action: <Link href={`/check-in/${data.id}`}>Check-In</Link>,
-        });
+        form.reset(),
+          void router.replace("/"),
+          toast({
+            title: "New Reservation",
+            description: (
+              <div className="flex justify-between">
+                <Check />
+                <p>Reservation added</p>
+              </div>
+            ),
+            action: <Link href={`/check-in/${data.id}`}>Check-In</Link>,
+          });
       },
     });
 
@@ -124,6 +135,7 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
       returningGuest: false,
     },
   });
+  const subTotal = form.watch("subTotalUSD");
   const resItemId = form.watch("resItemId");
   const checkIn = form.watch("checkIn");
   const checkOut = form.watch("checkOut");
@@ -152,28 +164,6 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
     createReservation(data);
-
-    // toast({
-    //   title: "The data:",
-    //   description: (
-    //     <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-    //       <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-    //     </pre>
-    //   ),
-    // });
-
-    // toast({
-    //   title: "New Reservation",
-    //   description: (
-    //     <div className="flex justify-between">
-    //       <Check />
-    //       <p>Reservation added</p>
-    //     </div>
-    //   ),
-    //   action: (
-    //     <ToastAction altText="Go to check-in">Go to Check In</ToastAction>
-    //   ),
-    // });
   }
 
   if (isLoadingGuests || isLoadingGuests || isLoadingResItems)
@@ -239,8 +229,8 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
                       </PopoverTrigger>
                       <PopoverContent className="w-[200px] p-0">
                         <Command>
-                          <CommandInput placeholder="Search framework..." />
-                          <CommandEmpty>No framework found.</CommandEmpty>
+                          <CommandInput placeholder="Search guest..." />
+                          <CommandEmpty>No guest found.</CommandEmpty>
                           <CommandGroup>
                             {guests.map((guest) => {
                               const fullName = `${guest.firstName} ${guest.surname}`;
@@ -336,124 +326,143 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
             </>
           )}
 
-          <FormField
-            control={form.control}
-            name="resItemId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Options</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a verified email to display" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {resItems &&
-                      resItems.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.description}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  You can manage email addresses in your{" "}
-                  <Link href="/examples/forms">email settings</Link>.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="checkIn"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Check-In</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
+          <section className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="resItemId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Options</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-[240px] pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select the reservation option." />
+                      </SelectTrigger>
                     </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                    <SelectContent>
+                      {resItems &&
+                        resItems.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.description}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="checkOut"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Check-Out</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
+            <FormField
+              control={form.control}
+              name="subTotalUSD"
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>Sub-total USD</FormLabel>
                     <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-[240px] pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
+                      <Input
+                        placeholder={formatCurrency({ amount: 0 })}
+                        {...field}
+                      />
                     </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) =>
-                        date.valueOf() <
-                        new Date(form.getValues("checkIn")).setHours(0, 0, 0, 0)
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormDescription>
-                  The check out date can be updated if the guest extends their
-                  stay.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+
+            <FormField
+              control={form.control}
+              name="checkIn"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Check-In</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="checkOut"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Check-Out</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) =>
+                          date.valueOf() <
+                          new Date(form.getValues("checkIn")).setHours(
+                            0,
+                            0,
+                            0,
+                            0
+                          )
+                        }
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </section>
+
           <div className="flex gap-4">
             <Button type="submit">Submit</Button>
             <Button
@@ -472,7 +481,7 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
       </Form>
 
       <Table className="shrink">
-        <TableCaption>Reservation Sumary.</TableCaption>
+        <TableCaption>Reservation Summary.</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead>Desc</TableHead>
@@ -480,15 +489,15 @@ export default function NewBookingForm({}: { reservationData?: Reservation }) {
             <TableHead className="text-right">Amount</TableHead>
           </TableRow>
         </TableHeader>
-        {reservationSummary && duration && (
+        {reservationSummary && (
           <TableBody>
             <TableRow>
-              <TableCell>{reservationSummary.description}</TableCell>
-              <TableCell>
-                {getRateTotal(duration, reservationSummary).desc}
-              </TableCell>
+              <TableCell>{reservationSummary?.descForInvoice}</TableCell>
+              <TableCell>{duration ?? ""}</TableCell>
               <TableCell className="text-right">
-                ${getRateTotal(duration, reservationSummary).value}
+                {formatCurrency({
+                  amount: Number(subTotal) | 0,
+                })}
               </TableCell>
             </TableRow>
           </TableBody>

@@ -12,10 +12,18 @@ import { type Item } from "@prisma/client";
 import { prisma } from "@/server/db";
 import { AppliedDiscount } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
+import { create } from "zustand";
+import { formatCurrency } from "../../../lib/utils";
 
 interface ItemToUpdate {
   itemId: string;
   qtyToSubtract: Decimal;
+}
+
+interface CurrencyConversionResponse {
+  rates: {
+    [currency: string]: number;
+  };
 }
 
 export type ItemWithQuantity = Item & {
@@ -35,23 +43,45 @@ async function calculateItemPriceAndDiscount(
   const { priceUSD, happyHourPriceUSD, staffPriceUSD } = item;
 
   let price = priceUSD;
-  let discountApplied: AppliedDiscount | null = null;
+  let discountApplied: AppliedDiscount = AppliedDiscount.NONE;
 
-  if (guestId) {
+  console.log(
+    `Calculating item price and discount for guest ID ${guestId ?? "None"}`
+  );
+
+  if (!guestId) {
+    console.log("Not a guest");
+    console.log("Happy hour?");
+    console.log(isHappyHour());
+    isHappyHour()
+      ? ((discountApplied = AppliedDiscount.HAPPY_HOUR),
+        (price = happyHourPriceUSD ?? priceUSD))
+      : ((discountApplied = AppliedDiscount.NONE), (price = priceUSD));
+  } else if (guestId) {
+    console.log("Guest");
     const guest = await prisma.guest.findUnique({
       where: { id: guestId },
       select: { type: true },
     });
+    if (!isHappyHour()) {
+      console.log("Not happy hour");
+      console.log(`Guest type ${guest?.type ?? ""}`);
 
-    if (guest?.type === AppliedDiscount.STAFF) {
-      price = staffPriceUSD || priceUSD;
-      discountApplied = AppliedDiscount.STAFF;
+      guest?.type === "STAFF"
+        ? ((discountApplied = AppliedDiscount.STAFF),
+          (price = staffPriceUSD ?? priceUSD))
+        : ((discountApplied = AppliedDiscount.NONE), (price = priceUSD));
+    } else {
+      console.log("Happy hour");
+      console.log(`Guest type ${guest?.type ?? ""}`);
+
+      guest?.type === "STAFF"
+        ? ((discountApplied = AppliedDiscount.STAFF),
+          (price = staffPriceUSD ?? priceUSD))
+        : ((discountApplied = AppliedDiscount.HAPPY_HOUR),
+          (price = happyHourPriceUSD ?? priceUSD));
     }
-  } else if (isHappyHour() && happyHourPriceUSD) {
-    price = happyHourPriceUSD;
-    discountApplied = AppliedDiscount.HAPPY_HOUR;
   }
-
   return { price, discountApplied };
 }
 
@@ -139,6 +169,30 @@ export const posRouter = createTRPCRouter({
     return orders;
   }),
 
+  getOrderById: privateProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const order = await ctx.prisma.order.findUnique({
+        where: { id: input.id },
+        include: {
+          items: { include: { item: true } },
+          guest: true,
+          invoice: true,
+        },
+      });
+      return order;
+    }),
+
+  getOrdersByName: privateProcedure
+    .input(z.object({ name: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const orders = await ctx.prisma.order.findMany({
+        where: { name: input.name },
+        include: { items: { include: { item: true } }, guest: true },
+      });
+      return orders;
+    }),
+
   getLastDay: privateProcedure.query(async ({ ctx }) => {
     const currentDate = new Date();
     const twentyFourHoursAgo = new Date(
@@ -164,7 +218,6 @@ export const posRouter = createTRPCRouter({
 
   getItems: publicProcedure.query(async ({ ctx }) => {
     const items = await ctx.prisma.item.findMany({
-      where: { category: { not: { equals: "INGREDIENT" } } },
       include: {
         _count: true,
         ingredients: {
@@ -239,177 +292,33 @@ export const posRouter = createTRPCRouter({
       }
     }),
 
-  //   createOrder: privateProcedure
-  //     .input(createOrderInputSchema)
-  //     .mutation(async ({ ctx, input }) => {
-  //       const { name, items, guestId, reservationId, invoiceId } = input;
-  //       let order;
+  deactivateItem: privateProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const updatedItem = await ctx.prisma.item.update({
+        where: { id: input.id },
+        data: { active: false },
+      });
+      return updatedItem;
+    }),
 
-  //       // Extract the IDs from the items in the order
-  //       const itemIds = items.map((item) => item.itemId);
+  getItemById: privateProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const item = await ctx.prisma.item.findUnique({
+        where: { id: input.id },
+        include: {
+          ingredients: {
+            include: {
+              ingredient: true,
+            },
+          },
+          itemOrders: { include: { order: true, item: true } },
+        },
+      });
 
-  //       // Get Item data from the databse
-  //       const itemData = await ctx.prisma.item.findMany({
-  //         where: {
-  //           id: {
-  //             in: itemIds,
-  //           },
-  //         },
-  //         include: {
-  //           ingredients: {
-  //             include: {
-  //               ingredient: true,
-  //               parentItems: true,
-  //             },
-  //           },
-  //         },
-  //       });
-
-  //       // For stock updates we only need the stock tracked Items - parent items are removed
-  //       const parentItems = itemData.filter(
-  //         (item) => item.ingredients.length > 0
-  //       );
-
-  //       // This is for mixed items - checks how much to subtract from the Items used as ingredients
-  //       // If more than one mixed item is ordered - checks how many of the items are on the order and calculates total to subtract
-  //       const itemIngredientsToUpdate: ItemToUpdate[] = [];
-  //       for (const item of itemData) {
-  //         const itemQuantities: Record<string, number> = {};
-
-  //         for (const orderItem of items) {
-  //           if (orderItem.itemId === item.id) {
-  //             const quantity = itemQuantities[item.id] || 0;
-  //             itemQuantities[item.id] = quantity + orderItem.quantity;
-  //           }
-  //         }
-
-  //         for (const ingredient of item.ingredients) {
-  //           const quantityToUpdate =
-  //             ingredient.quantity !== null && ingredient.quantity !== undefined
-  //               ? Number(ingredient.quantity) * (itemQuantities[item.id] || 0)
-  //               : 0;
-  //           const itemToUpdate: ItemToUpdate = {
-  //             itemId: ingredient.ingredientId ?? "",
-  //             itemName: ingredient.ingredient?.name ?? "",
-  //             qtyToSubtract: new Decimal(quantityToUpdate),
-  //             qtyUnit: ingredient.quantityUnit ?? "",
-  //           };
-
-  //           itemIngredientsToUpdate.push(itemToUpdate);
-  //         }
-  //       }
-
-  //       // This is for all other Items to be updated
-  //       const itemsToUpdate = items.filter((ogItem) => {
-  //         const isIngredientItem = itemIngredientsToUpdate.some(
-  //           (updatedItem) => updatedItem.itemId === ogItem.itemId
-  //         );
-  //         const isParentItem = parentItems.some(
-  //           (updatedItem) => updatedItem.id === ogItem.itemId
-  //         );
-  //         return !isIngredientItem && !isParentItem;
-  //       });
-
-  //       console.log(itemIngredientsToUpdate);
-  //       console.log(itemsToUpdate);
-
-  //       // For Hotel Guest with an active reservation & open invoice, link the order to current booking
-  //       if (guestId && reservationId && invoiceId) {
-  //         order = await ctx.prisma.order.create({
-  //           data: {
-  //             items: {
-  //               create: items.map((item) => ({
-  //                 item: {
-  //                   connect: { id: item.itemId },
-  //                 },
-  //                 quantity: item.quantity,
-  //               })),
-  //             },
-  //             // TODO: do I need to connect the Order to Guest if Invoice is already connected to Guest?
-  //             guest: {
-  //               connect: { id: input.guestId },
-  //             },
-  //             name: name,
-  //             // TODO: similarly is this required if the Invoice is linked to the Reservation already?
-  //             reservation: {
-  //               connect: { id: reservationId },
-  //             },
-  //             invoice: {
-  //               connect: { reservationId: reservationId, id: invoiceId },
-  //             },
-  //             happyHour: false,
-  //             subTotalUSD: getSubTotal(items),
-  //           },
-  //           include: {
-  //             items: true,
-  //             reservation: {
-  //               include: {
-  //                 invoice: {
-  //                   include: {
-  //                     lineItems: true,
-  //                   },
-  //                 },
-  //               },
-  //             },
-  //           },
-  //         });
-
-  //         // For outside guests or guests with no active reservation, link to Guest record
-  //       } else if (guestId && !reservationId) {
-  //         order = await ctx.prisma.order.create({
-  //           data: {
-  //             items: {
-  //               create: items.map((item) => ({
-  //                 item: {
-  //                   connect: { id: item.itemId },
-  //                 },
-  //                 quantity: item.quantity,
-  //               })),
-  //             },
-  //             guest: {
-  //               connect: { id: input.guestId },
-  //             },
-  //             name: name,
-  //             happyHour: false,
-  //             subTotalUSD: getSubTotal(items),
-  //           },
-  //           include: {
-  //             items: true,
-  //           },
-  //         });
-  //         // For everyone else...
-  //       } else {
-  //         order = await ctx.prisma.order.create({
-  //           data: {
-  //             items: {
-  //               create: items.map((item) => ({
-  //                 item: {
-  //                   connect: { id: item.itemId },
-  //                 },
-  //                 quantity: item.quantity,
-  //               })),
-  //             },
-  //             invoice: {
-  //               create: {
-  //                 customerName: name,
-  //                 // Initialise a new Invoice for the order
-  //                 invoiceNumber: await generateInvoiceNumber(),
-  //                 totalUSD: getSubTotal(items),
-  //               },
-  //             },
-  //             name: name,
-  //             happyHour: isHappyHour(),
-  //             subTotalUSD: getSubTotal(items),
-  //           },
-  //           include: {
-  //             items: true,
-  //             invoice: true,
-  //           },
-  //         });
-  //       }
-
-  //       return order;
-  //     }),
+      return item;
+    }),
 
   createOrder: privateProcedure
     .input(createOrderInputSchema)
@@ -433,15 +342,16 @@ export const posRouter = createTRPCRouter({
       });
 
       // START OF UPDATES
-      // Calculate the subTotal and discount for each item
+      // Calculate the price and discount for each item
       const calculatedItems = await Promise.all(
         items.map(async (item) => {
+          // get rest of item data
           const itemDataItem = itemData.find((data) => data.id === item.id);
 
           if (!itemDataItem) {
             // Handle the case when item data is not found
             throw new TRPCError({
-              message: "Items not found",
+              message: "Item not found",
               code: "NOT_FOUND",
             });
           }
@@ -458,12 +368,10 @@ export const posRouter = createTRPCRouter({
       );
 
       // Create an array to store the calculated items with their respective discounts
-      const orderItems = calculatedItems.map(
-        ({ item, discountApplied, subTotal }) => ({
-          item: { connect: { id: item.id } },
-          quantity: item.quantity,
-        })
-      );
+      const orderItems = calculatedItems.map(({ item }) => ({
+        item: { connect: { id: item.id } },
+        quantity: item.quantity,
+      }));
 
       // Calculate the total subTotal
       const subTotalUSD = calculatedItems.reduce(
@@ -516,20 +424,17 @@ export const posRouter = createTRPCRouter({
           });
         }
       }
-
+      console.log(calculatedItems);
       // Initialise the order data
       const orderData = {
         items: {
           create: orderItems,
         },
+        guest: {} as { connect?: { id: string } },
         name: name,
         happyHour: isHappyHour(),
         subTotalUSD: subTotalUSD,
-        appliedDiscount: calculatedItems.some(
-          (item) => item.discountApplied !== AppliedDiscount.NONE
-        )
-          ? AppliedDiscount.STAFF
-          : AppliedDiscount.NONE,
+        appliedDiscount: calculatedItems[0]?.discountApplied as AppliedDiscount,
         invoice: {} as { connect?: { id: string } } & {
           create?: {
             customerName: string;
@@ -581,6 +486,12 @@ export const posRouter = createTRPCRouter({
           };
         }
       }
+      if (input.guestId) {
+        orderData.guest.connect = {
+          id: input.guestId,
+        };
+      }
+
       const order = await ctx.prisma.order.create({
         data: orderData,
         include: {
@@ -610,13 +521,61 @@ export const posRouter = createTRPCRouter({
   markAsPaid: privateProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const updatedItem = await ctx.prisma.order.update({
+      console.log(input.id);
+      const updatedOrder = await ctx.prisma.order.update({
         where: { id: input.id },
         data: {
           status: OrderStatus.PAID,
         },
+        include: {
+          invoice: true,
+          reservation: { include: { reservationItem: true } },
+        },
       });
-      return updatedItem;
+
+      console.log(updatedOrder);
+
+      const invoiceId = updatedOrder.invoiceId;
+      const reservation = updatedOrder.reservation;
+
+      if (!updatedOrder || !invoiceId) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Not found",
+        });
+      }
+
+      // Calculate the sum of all outstanding orders for the Invoice
+      const outstandingOrders = await ctx.prisma.order.aggregate({
+        where: {
+          invoiceId: invoiceId,
+          status: { not: OrderStatus.PAID },
+        },
+        _sum: { subTotalUSD: true },
+      });
+
+      console.log(outstandingOrders);
+
+      let totalUSD = new Decimal(0); // Initialize totalUSD as a Decimal
+
+      if (outstandingOrders._sum.subTotalUSD) {
+        totalUSD = totalUSD.add(outstandingOrders._sum.subTotalUSD);
+      }
+
+      if (reservation && reservation.subTotalUSD) {
+        // Calculate the Reservation subTotal and add it to the total
+        totalUSD = totalUSD.add(reservation.subTotalUSD);
+      }
+
+      // Update the Invoice total
+      const updatedInvoice = await ctx.prisma.invoice.update({
+        where: { id: invoiceId },
+        data: {
+          totalUSD: totalUSD,
+        },
+      });
+
+      return updatedOrder;
     }),
 
   getInvoiceByNumber: privateProcedure
@@ -641,6 +600,92 @@ export const posRouter = createTRPCRouter({
       });
 
       return invoice;
+    }),
+
+  markInvoiceAsPaid: privateProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const updatedInvoice = await ctx.prisma.invoice.update({
+        where: { id: input.id },
+        data: {
+          status: "PAID",
+          orders: {
+            updateMany: {
+              where: { status: "UNPAID" },
+              data: {
+                status: "PAID",
+              },
+            },
+          },
+        },
+      });
+
+      return updatedInvoice;
+    }),
+
+  markOrderAsPaid: privateProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const updatedOrder = await ctx.prisma.order.update({
+        where: { id: input.id },
+        data: {
+          status: OrderStatus.PAID,
+        },
+        include: {
+          invoice: {
+            include: {
+              reservation: true,
+            },
+          },
+          reservation: { include: { reservationItem: true } },
+        },
+      });
+
+      const invoiceId = updatedOrder.invoiceId;
+      const reservation = updatedOrder.invoice?.reservation;
+
+      if (!updatedOrder.invoice || !invoiceId) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Not found",
+        });
+      }
+
+      // Calculate the sum of all outstanding orders for the Invoice
+      const outstandingOrders = await ctx.prisma.order.aggregate({
+        where: {
+          invoiceId: invoiceId,
+          status: { not: OrderStatus.PAID },
+        },
+        _sum: { subTotalUSD: true },
+      });
+
+      let totalUSD = new Decimal(0); // Initialize totalUSD as a Decimal
+
+      if (outstandingOrders._sum.subTotalUSD) {
+        totalUSD = totalUSD.add(
+          new Decimal(outstandingOrders._sum.subTotalUSD)
+        );
+      }
+
+      if (reservation && reservation.subTotalUSD) {
+        // Calculate the Reservation subTotal and add it to the total
+        totalUSD = totalUSD.add(new Decimal(reservation.subTotalUSD));
+      }
+
+      // Update the Invoice total
+      const updatedInvoice = await ctx.prisma.invoice.update({
+        where: { id: invoiceId },
+        data: {
+          totalUSD: totalUSD,
+        },
+      });
+
+      return updatedOrder;
     }),
 
   getOpenInvoices: privateProcedure.query(async ({ ctx }) => {
@@ -670,4 +715,43 @@ export const posRouter = createTRPCRouter({
 
     return invoices;
   }),
+
+  currencyConversion: privateProcedure
+    .input(
+      z.object({
+        fromCurrency: z.string(),
+        toCurrency: z.string(),
+        amount: z.number(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { fromCurrency, toCurrency, amount } = input;
+      const response = await fetch(
+        `https://api.exchangerate-api.com/v4/latest/${fromCurrency}`
+      );
+
+      if (!response.ok) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Failed to fetch currency.",
+        });
+      }
+
+      const data = (await response.json()) as CurrencyConversionResponse;
+
+      const conversionRate = data.rates[toCurrency];
+
+      if (!conversionRate) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid currency",
+        });
+      }
+      return {
+        rates: {
+          [toCurrency]: conversionRate,
+        },
+        converted: amount * conversionRate,
+      };
+    }),
 });

@@ -72,6 +72,8 @@ model Guest {
     orders               Order[]
     invoices             Invoice[]
     type                 GuestType     @default(HOTEL)
+    availableCredits     Decimal       @default(0) @db.Decimal(10, 2)
+    address              Json?
 }
 
 model Reservation {
@@ -111,6 +113,7 @@ model Reservation {
 
     @@index([roomId])
     @@index([guestId])
+    @@index([reservationItemId])
 }
 
 model Invoice {
@@ -164,6 +167,7 @@ model Task {
 // usedByItems represents the Items that uses Item as an ingredient.
 model Item {
     id                String       @id @default(cuid())
+    active            Boolean      @default(true)
     name              String
     category          ItemCategory
     descForInvoice    String?
@@ -175,6 +179,8 @@ model Item {
 
     quantityInStock Decimal @default(0) @db.Decimal(10, 2)
     quantityUnit    String? // The unit of measure e.g. ml, g
+    stockManaged    Boolean @default(true)
+    displayOnPOS    Boolean @default(true)
 
     itemOrders ItemOrders[]
 

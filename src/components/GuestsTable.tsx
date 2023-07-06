@@ -41,6 +41,10 @@ export const columns: ColumnDef<Guest>[] = [
     accessorKey: "email",
     header: "Email",
   },
+  {
+    accessorKey: "type",
+    header: "Type",
+  },
 ];
 
 export function GuestsTable() {

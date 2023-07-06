@@ -33,11 +33,9 @@ export default function IngredientsGrid({
 
   return (
     <div className="relative">
-      <section className="flex max-h-[33vh] flex-col gap-4 overflow-y-scroll border">
+      <section className="flex max-h-[33vh] flex-col gap-4 overflow-y-scroll">
         <div>
-          <h2 className="text-xl font-bold tracking-tight">
-            Select Ingredients
-          </h2>
+          <h2 className="text-xl font-bold tracking-tight">Ingredients</h2>
         </div>
         <div className="relative flex flex-col gap-4">
           {itemIngredients &&

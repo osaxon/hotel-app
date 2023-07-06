@@ -13,43 +13,9 @@ type MenuItemsWithChildren = MenuItem & { children?: MenuItem[] };
 
 const menuItems: MenuItemsWithChildren[] = [
   {
-    title: "Home",
+    title: "Three Little Birds",
     href: "/dashboard",
     description: "Main admin dashboard",
-  },
-  {
-    title: "Bar & Kitchen",
-    description: "View and create orders for the bar & kitchen.",
-    href: "/orders",
-    children: [
-      {
-        title: "Bar Orders",
-        href: "/orders",
-        description: "View & create orders for the bar.",
-      },
-      {
-        title: "Items & Stock",
-        href: "/items",
-        description: "View & manage inventory.",
-      },
-    ],
-  },
-  {
-    title: "Hotel",
-    description: "View and manage reservations and guests.",
-    href: "/bookings",
-    children: [
-      {
-        title: "Bookings",
-        href: "/bookings",
-        description: "Upcoming & active reservations.",
-      },
-      {
-        title: "Rooms",
-        href: "/room",
-        description: "View and manage room information.",
-      },
-    ],
   },
 ];
 
@@ -62,7 +28,11 @@ export function NavAdmin({}: React.HTMLAttributes<HTMLElement>) {
             return (
               <li key={item.title}>
                 {item.href && (
-                  <Link key={item.title} href={item.href} className="font-bold">
+                  <Link
+                    key={item.title}
+                    href={item.href}
+                    className="text-xl font-bold"
+                  >
                     {item.title}
                   </Link>
                 )}

@@ -13,9 +13,12 @@ const BookingsPage: NextPage = () => {
           <div className="flex items-center justify-between space-y-2">
             <h2 className="text-3xl font-bold tracking-tight">Reservations</h2>
           </div>
-          <div>
-            <Link href="/bookings/new-booking">
+          <div className="flex gap-4">
+            <Link href="/reservations/new-booking">
               <Button>Add New</Button>
+            </Link>
+            <Link href="/reservations/res-items/">
+              <Button variant="ghost">Manage Options</Button>
             </Link>
           </div>
           <section>

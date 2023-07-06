@@ -1,4 +1,4 @@
-import { convertToNormalCase } from "@/lib/utils";
+import { convertToNormalCase, formatCurrency } from "@/lib/utils";
 import { api } from "@/utils/api";
 import { type Item } from "@prisma/client";
 import { type ColumnDef } from "@tanstack/react-table";
@@ -77,7 +77,7 @@ export const columnsWithPrice: ColumnDef<Item>[] = [
     header: "Price USD",
     cell: ({ row }) => {
       const price: string = row.getValue("priceUSD");
-      return <div>${price.toString()}</div>;
+      return <div>{formatCurrency({ amount: Number(price) })}</div>;
     },
   },
 ];
@@ -134,9 +134,9 @@ export function ItemsTable({
       filterColumn="name"
       data={
         variant === "inventory"
-          ? inventoryItems
+          ? items.filter((item) => item.stockManaged === true)
           : variant === "pos"
-          ? items
+          ? items.filter((item) => item.displayOnPOS)
           : items
       }
       columns={

@@ -7,8 +7,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getDurationOfStay, getRateTotal } from "@/lib/utils";
-import { Prisma } from "@prisma/client";
+import { formatCurrency, getDurationOfStay } from "@/lib/utils";
+import { api } from "@/utils/api";
+import { type Prisma } from "@prisma/client";
+import dayjs from "dayjs";
+import Link from "next/link";
+import LoadingSpinner from "./loading";
 
 type OrderWithItems = Prisma.OrderGetPayload<{
   include: { items: { include: { item: true } } };
@@ -17,13 +21,6 @@ type OrderWithItems = Prisma.OrderGetPayload<{
 type ReservationWithResItem = Prisma.ReservationGetPayload<{
   include: { reservationItem: true };
 }>;
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-}
 
 export default function Invoice({
   invoice,
@@ -43,35 +40,60 @@ export default function Invoice({
   const orders: OrderWithItems[] = invoice.orders;
   const reservation: ReservationWithResItem | null = invoice.reservation;
 
+  const {
+    data: KHRConversionRate,
+    isLoading,
+    isError,
+  } = api.pos.currencyConversion.useQuery({
+    fromCurrency: "USD",
+    toCurrency: "KHR",
+    amount: Number(reservation?.subTotalUSD),
+  });
+
   let duration;
-  let rateTotals;
   let formattedReservationTotal;
-  let formattedRateTotal;
-  if (reservation && reservation.reservationItem) {
+  let KHRTotal;
+  let currentConversionRate;
+  if (reservation && reservation.reservationItem && KHRConversionRate) {
     duration = getDurationOfStay(reservation.checkIn, reservation.checkOut);
-    rateTotals = getRateTotal(duration, reservation.reservationItem);
 
-    formattedReservationTotal = new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(rateTotals.value);
+    formattedReservationTotal = formatCurrency({
+      amount: Number(reservation.subTotalUSD),
+    });
 
-    formattedRateTotal = new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(Number(reservation.reservationItem.dailyRateUSD));
+    KHRTotal = formatCurrency({
+      amount: Number(KHRConversionRate.converted),
+      currency: "KHR",
+    });
+
+    currentConversionRate = formatCurrency({
+      amount: Number(KHRConversionRate.rates.KHR),
+      currency: "KHR",
+    });
   }
 
   return (
     <Table>
-      <TableCaption>Transtions for {invoice?.customerName}</TableCaption>
+      <TableCaption>
+        {isLoading ? (
+          <LoadingSpinner />
+        ) : (
+          <p>
+            {" "}
+            Currency conversion as of {dayjs().format("DD MMM YYYY")}: 1 USD ={" "}
+            {currentConversionRate}
+          </p>
+        )}
+      </TableCaption>
       <TableHeader>
         <TableRow>
           <TableHead className="w-[100px]">No.</TableHead>
           <TableHead>Desc</TableHead>
+          <TableHead>Date</TableHead>
           <TableHead>Qty</TableHead>
           <TableHead className="text-right">Unit Price</TableHead>
-          <TableHead className="text-right">Sub-Total</TableHead>
+          <TableHead className="text-right">Sub-Total USD</TableHead>
+          <TableHead className="text-right">Sub-Total KHR</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -80,12 +102,18 @@ export default function Invoice({
             <TableCell className="font-medium uppercase">
               {reservation.id.slice(0, 10)}
             </TableCell>
-            <TableCell>{reservation.reservationItem?.descForInvoice}</TableCell>
+            <TableCell className="flex flex-col gap-1">
+              <p>{reservation.reservationItem?.descForInvoice}</p>
+            </TableCell>
+            <TableCell>
+              {dayjs(reservation.createdAt).format("DD MMM YY")}
+            </TableCell>
             <TableCell>{duration} nights</TableCell>
-            <TableCell className="text-right">{formattedRateTotal}</TableCell>
+            <TableCell className="text-center">-</TableCell>
             <TableCell className="text-right">
               {formattedReservationTotal}
             </TableCell>
+            <TableCell className="text-right">{KHRTotal}</TableCell>
           </TableRow>
         )}
         {orders &&
@@ -111,12 +139,20 @@ export default function Invoice({
                 return (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium uppercase">
-                      {order.id.slice(0, 10)}
+                      <Link href={`/orders/${order.id}`}>
+                        {order.id.slice(0, 10)}
+                      </Link>
                     </TableCell>
                     <TableCell>
-                      {" "}
-                      {item.item.name} {order.appliedDiscount}
+                      {item.item.name}{" "}
+                      {order.appliedDiscount !== "NONE"
+                        ? order.appliedDiscount + " discount applied"
+                        : ""}
                     </TableCell>
+                    <TableCell>
+                      {dayjs(order.createdAt).format("DD MMM YY")}
+                    </TableCell>
+
                     <TableCell>{item.quantity}</TableCell>
                     <TableCell className="text-right">
                       {formattedPrice}
