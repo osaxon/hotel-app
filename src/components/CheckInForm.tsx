@@ -80,24 +80,21 @@ export default function CheckInForm({
   const { data: rooms, isLoading: isLoadingRooms } =
     api.rooms.getVacanctRooms.useQuery();
 
-  const { mutate: checkIn, isLoading: isCheckingIn } =
-    api.reservations.checkIn.useMutation({
-      onSuccess: () => {
-        form.reset(), void router.replace("/");
-      },
-      onError: (data) => {
-        toast({
-          title: "The data:",
-          description: (
-            <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-              <code className="text-white">
-                {JSON.stringify(data, null, 2)}
-              </code>
-            </pre>
-          ),
-        });
-      },
-    });
+  const { mutate: checkIn } = api.reservations.checkIn.useMutation({
+    onSuccess: () => {
+      form.reset(), void router.replace("/");
+    },
+    onError: (data) => {
+      toast({
+        title: "The data:",
+        description: (
+          <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
+            <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+          </pre>
+        ),
+      });
+    },
+  });
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
     checkIn({ reservationId: reservationData?.id, ...data });
