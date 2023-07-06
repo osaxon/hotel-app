@@ -8,7 +8,10 @@ import { Toaster as HotToaster } from "react-hot-toast";
 
 const MyApp: AppType = ({ Component, pageProps }) => {
   return (
-    <ClerkProvider {...pageProps}>
+    <ClerkProvider
+      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      {...pageProps}
+    >
       <Component {...pageProps} />
       <Toaster />
       <HotToaster position="top-center" reverseOrder={false} />
