@@ -20,8 +20,9 @@ async function isAdminCheck(userId: string) {
 export default authMiddleware({
   async afterAuth(auth, req, evt) {
     // handle users who aren't authenticated
-
+    console.info("Auth middleware");
     if (!auth.userId && !auth.isPublicRoute) {
+      console.info("No user ID & private route.");
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return redirectToSignIn({ returnBackUrl: req.url });
     }
@@ -29,11 +30,17 @@ export default authMiddleware({
     // Redirect after log in
     // Users in the Admin org will be redirected to the admin dashboard
     if (auth.userId && auth.isPublicRoute) {
+      console.info("User is logged in and on public route");
+
       const isAdmin = await isAdminCheck(auth.userId);
       if (isAdmin) {
-        console.log("Admin redirect");
+        console.info("User is admin group");
         const dashboard = new URL("/dashboard", req.url);
         return NextResponse.rewrite(dashboard);
+      } else {
+        console.info("User is not in admin group");
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return redirectToSignIn({ returnBackUrl: req.url });
       }
       // For guests...
       // TODO: IMPLEMENT GUEST LOG IN
