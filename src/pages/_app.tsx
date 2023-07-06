@@ -1,5 +1,5 @@
 import { Toaster } from "@/components/Toaster";
-import "@/styles/globals.css";
+import "@/styles/global.css";
 import { api } from "@/utils/api";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
