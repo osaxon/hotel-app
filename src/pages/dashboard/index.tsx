@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { env } from "@/env.mjs";
 import { generateSSGHelper } from "@/server/helpers/ssgHelper";
 import { api } from "@/utils/api";
 import clerkClient from "@clerk/clerk-sdk-node";
@@ -135,7 +136,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
   // Get list of admin members
   const members = await clerkClient.organizations.getOrganizationMembershipList(
     {
-      organizationId: "org_2QShJyauTOgh6ieAcugtZLY5j9c",
+      organizationId: env.CLERK_ADMIN_ORG,
     }
   );
 
