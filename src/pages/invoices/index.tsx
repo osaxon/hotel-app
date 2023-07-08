@@ -15,7 +15,7 @@ const InvoicesPage: NextPage = () => {
           </div>
 
           <div>
-            <Link href="/items/add-new">
+            <Link href="/invoices/add-new">
               <Button>Add New</Button>
             </Link>
           </div>

@@ -22,7 +22,7 @@ type ReservationWithResItem = Prisma.ReservationGetPayload<{
   include: { reservationItem: true };
 }>;
 
-export default function Invoice({
+export default function InvoiceSummary({
   invoice,
 }: {
   invoice: Prisma.InvoiceGetPayload<{
@@ -99,7 +99,7 @@ export default function Invoice({
       <TableBody>
         {reservation && (
           <TableRow>
-            <TableCell className="font-medium uppercase">
+            <TableCell className="cursor-pointer font-medium uppercase underline">
               {reservation.id.slice(0, 10)}
             </TableCell>
             <TableCell className="flex flex-col gap-1">
@@ -138,7 +138,7 @@ export default function Invoice({
                 }).format(amount * item.quantity);
                 return (
                   <TableRow key={item.id}>
-                    <TableCell className="font-medium uppercase">
+                    <TableCell className="cursor-pointer font-medium uppercase underline">
                       <Link href={`/orders/${order.id}`}>
                         {order.id.slice(0, 10)}
                       </Link>
@@ -159,6 +159,16 @@ export default function Invoice({
                     </TableCell>
                     <TableCell className="text-right">
                       {formattedSubTotal}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {KHRConversionRate?.rates.KHR &&
+                        formatCurrency({
+                          amount:
+                            amount *
+                            item.quantity *
+                            KHRConversionRate?.rates.KHR,
+                          currency: "KHR",
+                        })}
                     </TableCell>
                   </TableRow>
                 );

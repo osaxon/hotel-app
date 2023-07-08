@@ -4,7 +4,12 @@ import {
   privateProcedure,
   publicProcedure,
 } from "@/server/api/trpc";
-import { ItemCategory, OrderStatus, type PrismaClient } from "@prisma/client";
+import {
+  ItemCategory,
+  OrderStatus,
+  PaymentStatus,
+  type PrismaClient,
+} from "@prisma/client";
 import { isHappyHour } from "@/lib/utils";
 import { Decimal } from "@prisma/client/runtime";
 import { generateInvoiceNumber } from "@/utils/generateInvoiceNumber";
@@ -12,8 +17,6 @@ import { type Item } from "@prisma/client";
 import { prisma } from "@/server/db";
 import { AppliedDiscount } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
-import { create } from "zustand";
-import { formatCurrency } from "../../../lib/utils";
 
 interface ItemToUpdate {
   itemId: string;
@@ -602,10 +605,11 @@ export const posRouter = createTRPCRouter({
       return invoice;
     }),
 
-  markInvoiceAsPaid: privateProcedure
+  updateInvoiceStatus: privateProcedure
     .input(
       z.object({
         id: z.string(),
+        status: z.nativeEnum(PaymentStatus),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -617,7 +621,7 @@ export const posRouter = createTRPCRouter({
             updateMany: {
               where: { status: "UNPAID" },
               data: {
-                status: "PAID",
+                status: input.status ?? "PAID",
               },
             },
           },
