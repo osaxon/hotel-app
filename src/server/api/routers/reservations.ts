@@ -221,13 +221,19 @@ export const reservationsRouter = createTRPCRouter({
     .input(
       z.object({
         reservationId: z.string(),
-        guestName: z.string(),
         firstName: z.string(),
+        surname: z.string(),
         checkIn: z.date(),
         checkOut: z.date(),
-        surname: z.string(),
         guestEmail: z.string().email(),
         roomId: z.string(),
+        address: z.object({
+          street: z.string(),
+          city: z.string(),
+          state: z.string(),
+          postalCode: z.string(),
+          country: z.string(),
+        }),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -269,6 +275,7 @@ export const reservationsRouter = createTRPCRouter({
                 fullName: `${input.firstName} ${input.surname}`,
                 currentReservationId: input.reservationId,
                 email: input.guestEmail,
+                address: input.address,
               },
             },
           },
@@ -308,27 +315,15 @@ export const reservationsRouter = createTRPCRouter({
         });
       }
 
-      const resItem: ReservationItem | null = reservation.reservationItem;
-
-      if (!resItem) {
-        throw new TRPCError({
-          message: "Reservation item not found.",
-          code: "UNPROCESSABLE_CONTENT",
-        });
-      }
-
-      // Calculate rate total based on duration and reservation item
-      const rateTotal = getRateTotal(durationInDays, resItem);
-
       const invoice = await ctx.prisma.invoice.create({
         data: {
           invoiceNumber: formattedInvoiceNumber,
           customerEmail: input.guestEmail,
           customerName: input.firstName,
+          totalUSD: reservation.subTotalUSD,
           reservation: {
             connect: { id: reservation.id },
           },
-          totalUSD: rateTotal.value,
           guest: {
             connect: {
               id: reservation.guestId,
@@ -355,8 +350,6 @@ export const reservationsRouter = createTRPCRouter({
           code: "NOT_FOUND",
         });
       }
-
-      // TODO update reservation with InvoiceID string value
 
       return reservation;
     }),

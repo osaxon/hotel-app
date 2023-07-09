@@ -91,13 +91,12 @@ export const columns: ColumnDef<
     header: "Name",
   },
   {
-    accessorKey: "guest.email",
+    accessorKey: "guestEmail",
     header: "Email",
   },
-
   {
     accessorKey: "reservationItem.description",
-    header: "Reservation Class",
+    header: "Option",
     cell: ({ row }) => {
       const resItemId: string = row.original.reservationItem?.id || "";
       const resItemDesc: string =

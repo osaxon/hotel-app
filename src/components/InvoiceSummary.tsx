@@ -87,7 +87,6 @@ export default function InvoiceSummary({
       </TableCaption>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[100px]">No.</TableHead>
           <TableHead>Desc</TableHead>
           <TableHead>Date</TableHead>
           <TableHead>Qty</TableHead>
@@ -99,11 +98,13 @@ export default function InvoiceSummary({
       <TableBody>
         {reservation && (
           <TableRow>
-            <TableCell className="cursor-pointer font-medium uppercase underline">
-              {reservation.id.slice(0, 10)}
-            </TableCell>
             <TableCell className="flex flex-col gap-1">
-              <p>{reservation.reservationItem?.descForInvoice}</p>
+              <Link
+                className="underline"
+                href={`/reservations/${reservation.id}`}
+              >
+                {reservation.reservationItem?.descForInvoice}
+              </Link>
             </TableCell>
             <TableCell>
               {dayjs(reservation.createdAt).format("DD MMM YY")}
@@ -138,16 +139,13 @@ export default function InvoiceSummary({
                 }).format(amount * item.quantity);
                 return (
                   <TableRow key={item.id}>
-                    <TableCell className="cursor-pointer font-medium uppercase underline">
-                      <Link href={`/orders/${order.id}`}>
-                        {order.id.slice(0, 10)}
-                      </Link>
-                    </TableCell>
                     <TableCell>
-                      {item.item.name}{" "}
-                      {order.appliedDiscount !== "NONE"
-                        ? order.appliedDiscount + " discount applied"
-                        : ""}
+                      <Link className="underline" href={`/orders/${order.id}`}>
+                        {item.item.descForInvoice}{" "}
+                        {order.appliedDiscount !== "NONE"
+                          ? order.appliedDiscount + " discount"
+                          : ""}
+                      </Link>
                     </TableCell>
                     <TableCell>
                       {dayjs(order.createdAt).format("DD MMM YY")}
