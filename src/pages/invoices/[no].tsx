@@ -78,37 +78,40 @@ const InvoicePage: NextPage = () => {
   return (
     <AdminLayout>
       <section className="flex-1 space-y-4 p-8 pt-6">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2 sm:justify-start">
           <Button
-            className="flex items-center gap-x-1 print:hidden"
+            className="flex items-center gap-x-1 text-sm print:hidden"
             variant="ghost"
+            size="sm"
             onClick={() => window.print()}
           >
             <Printer className="h-4" />
             Print
           </Button>
-          <AddItemsDialog invoice={invoice} />
           {invoice.status !== "PAID" && (
             <Button
-              className="flex items-center gap-x-1 print:hidden"
+              className="flex items-center gap-x-1 text-sm print:hidden"
               variant="ghost"
+              size="sm"
               onClick={() => markAsPaid({ id: invoice.id, status: "PAID" })}
             >
               <Receipt className="h-4" />
-              {isUpdatingStatus ? <LoadingSpinner size={36} /> : "Mark as Paid"}
+              {isUpdatingStatus ? <LoadingSpinner size={36} /> : "Paid"}
             </Button>
           )}
           {invoice.status !== "UNPAID" &&
             invoice.reservation &&
             invoice.reservation.status === "CHECKED_IN" && (
               <Button
-                className="flex items-center gap-x-1 print:hidden"
+                className="flex items-center gap-x-1 text-sm print:hidden"
                 variant="ghost"
+                size="sm"
               >
                 <CheckCheck className="h-4" />
-                Check out Guest
+                Check out
               </Button>
             )}
+          {invoice.status !== "PAID" && <AddItemsDialog invoice={invoice} />}
         </div>
 
         <CompanyDetailsCard />
@@ -197,16 +200,16 @@ function AddItemsDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost">
+        <Button size="sm" className="text-sm" variant="ghost">
           <PlusSquare className="h-4" /> Add Items{" "}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="top-5 sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Update Invoice</DialogTitle>
           <DialogDescription>Add Items to the invoice.</DialogDescription>
         </DialogHeader>
-        <div className="grid max-h-[70vh] gap-4 overflow-y-scroll py-4">
+        <div className="grid max-h-[55vh] gap-4 overflow-y-scroll py-4">
           {!category
             ? types &&
               types.map((type) => (
@@ -252,7 +255,7 @@ function AddItemsDialog({
                   );
                 })}
         </div>
-        <DialogFooter>
+        <DialogFooter className="flex flex-col gap-4">
           <Button
             variant="destructive"
             onClick={() => setCategory("")}
