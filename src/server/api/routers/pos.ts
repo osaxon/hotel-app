@@ -625,6 +625,11 @@ export const posRouter = createTRPCRouter({
               },
             },
           },
+          reservation: {
+            update: {
+              paymentStatus: "PAID",
+            },
+          },
         },
       });
 

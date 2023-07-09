@@ -44,7 +44,7 @@ export function InvoiceDetailsCard({
       <CardHeader className="items-center">
         <CardTitle> ឦន្វៃចេ / Invoice</CardTitle>
       </CardHeader>
-      <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <CardContent className="grid grid-cols-2 gap-4">
         <div className="p-2">
           <p className="flex items-center gap-x-2 text-lg">
             អតិថិជន / Customer:{" "}

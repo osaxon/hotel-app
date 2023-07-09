@@ -21,7 +21,7 @@ const menuItems: MenuItemsWithChildren[] = [
 
 export function NavAdmin({}: React.HTMLAttributes<HTMLElement>) {
   return (
-    <nav className="flex justify-between border px-8 py-4">
+    <nav className="flex justify-between border px-8 py-4 print:hidden">
       <ul className="flex gap-2">
         {menuItems &&
           menuItems.map((item) => {
