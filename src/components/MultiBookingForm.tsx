@@ -26,7 +26,7 @@ import { CalendarIcon, Check, ChevronsUpDown } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import * as z from "zod";
 import { LoadingPage } from "./loading";
 import {
@@ -53,6 +53,13 @@ const FormSchema = z.object({
   guestId: z.string().optional(),
   checkIn: z.date(),
   checkOut: z.date(),
+  test: z.array(
+    z.object({
+      // Define the properties of each object in the array
+      guestName: z.string(),
+      // Add more properties as needed
+    })
+  ),
   subTotalUSD: z
     .string()
     .refine((value) => !isNaN(parseFloat(value)), {
@@ -62,9 +69,10 @@ const FormSchema = z.object({
     .transform((value) => parseFloat(value)),
 });
 
-export default function NewBookingForm() {
+export default function MultiBookingForm() {
   const [runGuestQuery, setRunGuestQuery] = useState<boolean>(false);
   const [selectedGuest, setSelectedGuest] = useState<string>("");
+
   const reservationSummary: ReservationItem | undefined = useReservationStore(
     (state) => state.reservationItem
   );
@@ -131,6 +139,13 @@ export default function NewBookingForm() {
   const checkIn = form.watch("checkIn");
   const checkOut = form.watch("checkOut");
 
+  const { fields, append, prepend, remove, swap, move, insert } = useFieldArray(
+    {
+      control: form.control,
+      name: "test", // unique name for your Field Array
+    }
+  );
+
   useEffect(() => {
     if (!resItemId) {
       return;
@@ -166,6 +181,7 @@ export default function NewBookingForm() {
 
   return (
     <Form {...form}>
+      <p>multi form</p>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
         className="w-full shrink-0 space-y-6 md:w-2/3"
@@ -447,6 +463,14 @@ export default function NewBookingForm() {
             )}
           />
         </section>
+        <div onClick={() => append({ guestName: "" })}>Add</div>
+
+        {fields.map((field, index) => (
+          <input
+            key={field.id} // important to include key with field's id
+            {...form.register(`test.${index}.guestName`)}
+          />
+        ))}
 
         <div className="flex gap-4">
           <Button type="submit">Submit</Button>

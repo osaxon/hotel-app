@@ -1,33 +1,7 @@
 // @ts-nocheck
 
 const { PrismaClient } = require("@prisma/client");
-const faker = require("faker");
 const prisma = new PrismaClient();
-
-const getRandomDate = (start, end) => {
-  return new Date(
-    start.getTime() + Math.random() * (end.getTime() - start.getTime())
-  );
-};
-
-const getRandomFutureDate = () => {
-  const currentDate = new Date();
-  const futureDate = new Date(
-    currentDate.getFullYear(),
-    currentDate.getMonth(),
-    currentDate.getDate() + 30
-  );
-  const checkInDate = getRandomDate(currentDate, futureDate);
-  const checkOutDate = new Date(
-    checkInDate.getFullYear(),
-    checkInDate.getMonth(),
-    checkInDate.getDate() + Math.floor(Math.random() * 30) + 1
-  );
-  return {
-    checkIn: checkInDate,
-    checkOut: checkOutDate,
-  };
-};
 
 const seed = async () => {
   try {
@@ -95,33 +69,86 @@ const seed = async () => {
         ],
         skipDuplicates: true,
       }),
+
+      prisma.reservationItem.createMany({
+        data: [
+          {
+            description: "Deluxe Poolview",
+            descForInvoice: "ទិដ្ឋភាពអាងហែលទឹកពិសេស Deluxe Poolview Room",
+            roomType: "DELUXE",
+            boardType: "NONE",
+            roomVariant: "POOL_VIEW",
+          },
+          {
+            description: "Deluxe Poolview with Breakfast",
+            descForInvoice:
+              "ទិដ្ឋភាពអាងហែលទឹកពិសេស ជាមួយអាហារពេលព្រឹក Deluxe Poolview with breakfast",
+            roomType: "DELUXE",
+            boardType: "BREAKFAST",
+            roomVariant: "POOL_VIEW",
+          },
+          {
+            description: "Deluxe Room",
+            descForInvoice: "បន្ទប់ពិសេស Deluxe Room",
+            roomType: "DELUXE",
+            boardType: "NONE",
+            roomVariant: "NONE",
+          },
+          {
+            description: "Deluxe Room with Breakfast",
+            descForInvoice:
+              "បន្ទប់ពិសេសជាមួយអាហារពេលព្រឹក Deluxe Room with Breakfast",
+            roomType: "DELUXE",
+            boardType: "BREAKFAST",
+            roomVariant: "NONE",
+          },
+          {
+            description: "Superior Poolview",
+            descForInvoice: "ទិដ្ឋភាពអាងហែលទឹកដ៏អស្ចារ្យ Superior Poolview",
+            roomType: "SUPERIOR",
+            boardType: "NONE",
+            roomVariant: "POOL_VIEW",
+          },
+          {
+            description: "Superior Poolview with Breakfast",
+            descForInvoice:
+              "ទិដ្ឋភាពអាងហែលទឹកដ៏អស្ចារ្យ ជាមួយនឹងអាហារពេលព្រឹក Superior Poolview with Breakfast",
+            roomType: "SUPERIOR",
+            boardType: "BREAKFAST",
+            roomVariant: "POOL_VIEW",
+          },
+          {
+            description: "Superior Poolside",
+            descForInvoice: "ចំហៀងអាងហែលទឹកដ៏អស្ចារ្យ Superior Poolside",
+            roomType: "SUPERIOR",
+            boardType: "NONE",
+            roomVariant: "POOL_SIDE",
+          },
+          {
+            description: "Superior Poolside with Breakfast",
+            descForInvoice:
+              "ចំហៀងអាងហែលទឹកដ៏អស្ចារ្យ ជាមួយអាហារពេលព្រឹក Superior Poolside with Breakfast",
+            roomType: "SUPERIOR",
+            boardType: "BREAKFAST",
+            roomVariant: "POOL_SIDE",
+          },
+          {
+            description: "Monthly Room",
+            descForInvoice: "បន្ទប់ប្រចាំខែ Monthly Room",
+            roomType: "SUPERIOR",
+            boardType: "NONE",
+            roomVariant: "NONE",
+          },
+          {
+            description: "Weekly Room",
+            descForInvoice: "បន្ទប់ប្រចាំសប្តាហ៍ Weekly Room",
+            roomType: "SUPERIOR",
+            boardType: "NONE",
+            roomVariant: "NONE",
+          },
+        ],
+      }),
     ]);
-
-    const reservations = Array.from({ length: 8 }, () => {
-      const { checkIn, checkOut } = getRandomFutureDate();
-      return {
-        guestName: faker.name.findName(),
-        checkIn,
-        checkOut,
-      };
-    });
-
-    await prisma.reservation.createMany({
-      data: reservations,
-    });
-
-    const guests = Array.from({ length: 4 }, () => {
-      const firstName = faker.name.firstName();
-      const surname = faker.name.lastName();
-      return {
-        firstName,
-        surname,
-        fullName: firstName + " " + surname,
-        email: faker.internet.email(),
-      };
-    });
-
-    await prisma.guest.createMany({ data: guests });
 
     console.log("Seeding complete!");
   } catch (error) {

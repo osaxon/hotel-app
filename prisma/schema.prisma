@@ -13,15 +13,14 @@ datasource db {
 }
 
 model Room {
-    id           String              @id @default(cuid())
-    roomNumber   String              @unique
+    id           String        @id @default(cuid())
+    roomNumber   String        @unique
     roomName     String?
-    roomType     RoomType            @default(STANDARD)
-    status       RoomStatus          @default(VACANT)
-    variant      RoomVariant         @default(POOL_VIEW)
+    roomType     RoomType      @default(STANDARD)
+    status       RoomStatus    @default(VACANT)
+    variant      RoomVariant   @default(POOL_VIEW)
     capacity     Int
     reservations Reservation[]
-    images       RoomImageRelation[]
 
     dailyRateUSD Decimal @default(20) @db.Decimal(10, 2)
     tasks        Task[]
@@ -34,31 +33,8 @@ model ReservationItem {
     roomType       RoomType    @default(STANDARD)
     roomVariant    RoomVariant @default(POOL_VIEW)
     boardType      BoardType   @default(NONE)
-    dailyRateUSD   Decimal     @db.Decimal(10, 2)
-    weeklyRate     Decimal?    @db.Decimal(10, 2)
-    monthlyRate    Decimal?    @db.Decimal(10, 2)
 
     reservations Reservation[]
-}
-
-model RoomImage {
-    id         String              @id @default(cuid())
-    fileUrl    String
-    fileKey    String
-    roomImages RoomImageRelation[]
-
-    @@index([fileUrl])
-}
-
-model RoomImageRelation {
-    id          String    @id @default(cuid())
-    roomId      String
-    room        Room      @relation(fields: [roomId], references: [id])
-    roomImage   RoomImage @relation(fields: [roomImageId], references: [id])
-    roomImageId String
-
-    @@index([roomId])
-    @@index([roomImageId])
 }
 
 model Guest {
@@ -77,8 +53,7 @@ model Guest {
 }
 
 model Reservation {
-    id String @id @default(cuid())
-
+    id                String           @id @default(cuid())
     reservationItemId String?
     reservationItem   ReservationItem? @relation(fields: [reservationItemId], references: [id])
 
@@ -89,7 +64,7 @@ model Reservation {
     room        Room?       @relation(fields: [roomId], references: [id])
     roomId      String?     @unique
     roomType    RoomType?   @default(STANDARD)
-    roomVariant RoomVariant @default(POOL_VIEW)
+    roomVariant RoomVariant @default(NONE)
 
     checkIn  DateTime
     checkOut DateTime
@@ -292,6 +267,7 @@ enum RoomStatus {
 enum RoomVariant {
     POOL_VIEW
     POOL_SIDE
+    NONE
 }
 
 enum PaymentStatus {
