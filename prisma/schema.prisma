@@ -22,8 +22,7 @@ model Room {
     capacity     Int
     reservations Reservation[]
 
-    dailyRateUSD Decimal @default(20) @db.Decimal(10, 2)
-    tasks        Task[]
+    tasks Task[]
 }
 
 model ReservationItem {
@@ -53,7 +52,8 @@ model Guest {
 }
 
 model Reservation {
-    id                String           @id @default(cuid())
+    id String @id @default(cuid())
+
     reservationItemId String?
     reservationItem   ReservationItem? @relation(fields: [reservationItemId], references: [id])
 
@@ -64,7 +64,7 @@ model Reservation {
     room        Room?       @relation(fields: [roomId], references: [id])
     roomId      String?     @unique
     roomType    RoomType?   @default(STANDARD)
-    roomVariant RoomVariant @default(NONE)
+    roomVariant RoomVariant @default(POOL_VIEW)
 
     checkIn  DateTime
     checkOut DateTime
@@ -84,7 +84,7 @@ model Reservation {
     paymentStatus PaymentStatus @default(UNPAID)
 
     invoiceId String?  @unique
-    invoice   Invoice?
+    invoice   Invoice? @relation(fields: [invoiceId], references: [id])
 
     @@index([roomId])
     @@index([guestId])
@@ -98,8 +98,7 @@ model Invoice {
     createdAt     DateTime      @default(now())
     totalUSD      Decimal?      @db.Decimal(10, 2)
 
-    reservationId String?      @unique
-    reservation   Reservation? @relation(fields: [reservationId], references: [id])
+    reservations Reservation[]
 
     customerName  String?
     customerEmail String?
@@ -110,7 +109,6 @@ model Invoice {
     paymentMethod PaymentMethod?
     orders        Order[]
 
-    @@index([reservationId])
     @@index([guestId])
 }
 

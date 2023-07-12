@@ -129,7 +129,7 @@ export const reservationsRouter = createTRPCRouter({
             reservationItem: true,
             invoice: {
               include: {
-                reservation: true,
+                reservations: true,
               },
             },
           },
@@ -152,7 +152,7 @@ export const reservationsRouter = createTRPCRouter({
             reservationItem: true,
             invoice: {
               include: {
-                reservation: true,
+                reservations: true,
               },
             },
           },
@@ -321,7 +321,7 @@ export const reservationsRouter = createTRPCRouter({
           customerEmail: input.guestEmail,
           customerName: input.firstName,
           totalUSD: reservation.subTotalUSD,
-          reservation: {
+          reservations: {
             connect: { id: reservation.id },
           },
           guest: {
@@ -331,7 +331,7 @@ export const reservationsRouter = createTRPCRouter({
           },
         },
         include: {
-          reservation: true,
+          reservations: true,
           orders: {
             include: {
               items: {
