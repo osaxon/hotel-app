@@ -148,19 +148,6 @@ export default function NewInvoiceForm() {
     name: "reservations", // unique name for your Field Array
   });
 
-  //   const {
-  //     fields: itemFields,
-  //     append: appendItem,
-  //     prepend: prependItem,
-  //     remove: removeItem,
-  //     swap: swapItem,
-  //     move: moveItem,
-  //     insert: insertItem,
-  //   } = useFieldArray({
-  //     control: form.control,
-  //     name: "orders", // unique name for your Field Array
-  //   });
-
   function onSubmit(data: z.infer<typeof FormSchema>) {
     addInvoice(data);
     toast({
