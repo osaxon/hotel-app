@@ -53,19 +53,11 @@ export default function CheckOutForm({
     },
   });
 
-  const { mutate: calculatefinal } =
-    api.reservations.calculateSubTotal.useMutation();
-
   const { data: aggregate } = api.reservations.aggOrderTotal.useQuery({
     resId: reservationData.id,
   });
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    calculatefinal({
-      reservationId: data.reservationId,
-      checkIn: data.checkIn,
-      checkOut: data.checkOut,
-    });
     toast({
       title: "The data:",
       description: (
