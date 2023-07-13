@@ -77,18 +77,20 @@ model Reservation {
     roomRate  Decimal?  @db.Decimal(10, 2)
 
     // Basic guest information fields
-    guestName  String
-    guestEmail String?
+    firstName String?
+    surname   String?
+    email     String?
 
     subTotalUSD   Decimal?      @db.Decimal(10, 2)
     paymentStatus PaymentStatus @default(UNPAID)
 
-    invoiceId String?  @unique
+    invoiceId String?
     invoice   Invoice? @relation(fields: [invoiceId], references: [id])
 
     @@index([roomId])
     @@index([guestId])
     @@index([reservationItemId])
+    @@index([invoiceId])
 }
 
 model Invoice {

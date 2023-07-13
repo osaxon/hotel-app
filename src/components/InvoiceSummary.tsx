@@ -28,7 +28,7 @@ export default function InvoiceSummary({
   invoice: Prisma.InvoiceGetPayload<{
     include: {
       lineItems: true;
-      reservation: { include: { guest: true; reservationItem: true } };
+      reservations: { include: { guest: true; reservationItem: true } };
       orders: {
         include: {
           items: { include: { item: true } };
@@ -38,7 +38,7 @@ export default function InvoiceSummary({
   }>;
 }) {
   const orders: OrderWithItems[] = invoice.orders;
-  const reservation: ReservationWithResItem | null = invoice.reservation;
+  const reservations: ReservationWithResItem[] | [] = invoice.reservations;
 
   const {
     data: KHRConversionRate,
@@ -47,30 +47,16 @@ export default function InvoiceSummary({
   } = api.pos.currencyConversion.useQuery({
     fromCurrency: "USD",
     toCurrency: "KHR",
-    amount: Number(reservation?.subTotalUSD),
+    amount: 0,
   });
 
   let duration;
   let formattedReservationTotal;
-  let KHRTotal;
-  let currentConversionRate;
-  if (reservation && reservation.reservationItem && KHRConversionRate) {
-    duration = getDurationOfStay(reservation.checkIn, reservation.checkOut);
-
-    formattedReservationTotal = formatCurrency({
-      amount: Number(reservation.subTotalUSD),
-    });
-
-    KHRTotal = formatCurrency({
-      amount: Number(KHRConversionRate.converted),
-      currency: "KHR",
-    });
-
-    currentConversionRate = formatCurrency({
-      amount: Number(KHRConversionRate.rates.KHR),
-      currency: "KHR",
-    });
-  }
+  let KHRTotal: string;
+  const currentConversionRate = formatCurrency({
+    amount: Number(KHRConversionRate && KHRConversionRate.rates.KHR),
+    currency: "KHR",
+  });
 
   return (
     <Table>
@@ -96,27 +82,50 @@ export default function InvoiceSummary({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {reservation && (
-          <TableRow>
-            <TableCell className="flex flex-col gap-1">
-              <Link
-                className="underline"
-                href={`/reservations/${reservation.id}`}
-              >
-                {reservation.reservationItem?.descForInvoice}
-              </Link>
-            </TableCell>
-            <TableCell>
-              {dayjs(reservation.createdAt).format("DD MMM YY")}
-            </TableCell>
-            <TableCell>{duration} nights</TableCell>
-            <TableCell className="text-center">-</TableCell>
-            <TableCell className="text-right">
-              {formattedReservationTotal}
-            </TableCell>
-            <TableCell className="text-right">{KHRTotal}</TableCell>
-          </TableRow>
-        )}
+        {reservations &&
+          reservations.map((reservation) => {
+            duration = getDurationOfStay(
+              reservation.checkIn,
+              reservation.checkOut
+            );
+
+            formattedReservationTotal = formatCurrency({
+              amount: Number(reservation.subTotalUSD),
+            });
+
+            if (KHRConversionRate && KHRConversionRate?.rates?.KHR) {
+              KHRTotal = formatCurrency({
+                amount: Number(
+                  KHRConversionRate?.rates?.KHR *
+                    Number(reservation.subTotalUSD)
+                ),
+                currency: "KHR",
+              });
+            }
+
+            return (
+              <TableRow key={reservation.id}>
+                <TableCell className="flex flex-col gap-1">
+                  <Link
+                    className="underline"
+                    href={`/reservations/${reservation.id}`}
+                  >
+                    {reservation.reservationItem?.descForInvoice}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  {dayjs(reservation.createdAt).format("DD MMM YY")}
+                </TableCell>
+                <TableCell>{duration} nights</TableCell>
+                <TableCell className="text-center">-</TableCell>
+                <TableCell className="text-right">
+                  {formattedReservationTotal}
+                </TableCell>
+                <TableCell className="text-right">{KHRTotal}</TableCell>
+              </TableRow>
+            );
+          })}
+
         {orders &&
           orders.map(
             (order) =>

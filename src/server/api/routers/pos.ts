@@ -8,6 +8,7 @@ import {
   ItemCategory,
   OrderStatus,
   PaymentStatus,
+  Reservation,
   type PrismaClient,
 } from "@prisma/client";
 import { isHappyHour } from "@/lib/utils";
@@ -589,7 +590,7 @@ export const posRouter = createTRPCRouter({
         include: {
           guest: true,
           lineItems: true,
-          reservation: { include: { guest: true, reservationItem: true } },
+          reservations: { include: { guest: true, reservationItem: true } },
           orders: {
             include: {
               items: {
@@ -625,9 +626,14 @@ export const posRouter = createTRPCRouter({
               },
             },
           },
-          reservation: {
-            update: {
-              paymentStatus: "PAID",
+          reservations: {
+            updateMany: {
+              where: {
+                invoiceId: input.id,
+              },
+              data: {
+                paymentStatus: "PAID",
+              },
             },
           },
         },
@@ -647,7 +653,7 @@ export const posRouter = createTRPCRouter({
         include: {
           invoice: {
             include: {
-              reservation: true,
+              reservations: true,
             },
           },
           reservation: { include: { reservationItem: true } },
@@ -655,7 +661,6 @@ export const posRouter = createTRPCRouter({
       });
 
       const invoiceId = updatedOrder.invoiceId;
-      const reservation = updatedOrder.invoice?.reservation;
 
       if (!updatedOrder.invoice || !invoiceId) {
         throw new TRPCError({
@@ -663,6 +668,14 @@ export const posRouter = createTRPCRouter({
           message: "Not found",
         });
       }
+
+      const outstandingReservations = await ctx.prisma.reservation.aggregate({
+        where: {
+          invoiceId: invoiceId,
+          paymentStatus: { not: PaymentStatus.PAID },
+        },
+        _sum: { subTotalUSD: true },
+      });
 
       // Calculate the sum of all outstanding orders for the Invoice
       const outstandingOrders = await ctx.prisma.order.aggregate({
@@ -681,9 +694,11 @@ export const posRouter = createTRPCRouter({
         );
       }
 
-      if (reservation && reservation.subTotalUSD) {
+      if (outstandingReservations._sum.subTotalUSD) {
         // Calculate the Reservation subTotal and add it to the total
-        totalUSD = totalUSD.add(new Decimal(reservation.subTotalUSD));
+        totalUSD = totalUSD.add(
+          new Decimal(outstandingReservations._sum.subTotalUSD)
+        );
       }
 
       // Update the Invoice total
@@ -713,7 +728,7 @@ export const posRouter = createTRPCRouter({
             },
           },
         },
-        reservation: {
+        reservations: {
           include: {
             reservationItem: true,
             room: true,

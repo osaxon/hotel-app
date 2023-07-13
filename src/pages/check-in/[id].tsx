@@ -30,7 +30,7 @@ const CheckInPage: NextPage = () => {
           <h2 className="text-3xl font-bold tracking-tight">Check In</h2>
         </div>
         <div>
-          <p>Complete check in for {reservation?.guestName}.</p>
+          <p>Complete check in for {reservation?.firstName}.</p>
         </div>
         <section>
           <CheckInForm reservationData={reservation} />

@@ -99,18 +99,15 @@ const InvoicePage: NextPage = () => {
               {isUpdatingStatus ? <LoadingSpinner size={36} /> : "Paid"}
             </Button>
           )}
-          {invoice.status !== "UNPAID" &&
-            invoice.reservation &&
-            invoice.reservation.status === "CHECKED_IN" && (
-              <Button
-                className="flex items-center gap-x-1 text-sm print:hidden"
-                variant="ghost"
-                size="sm"
-              >
-                <CheckCheck className="h-4" />
-                Check out
-              </Button>
-            )}
+          <Button
+            className="flex items-center gap-x-1 text-sm print:hidden"
+            variant="ghost"
+            size="sm"
+          >
+            <CheckCheck className="h-4" />
+            Check out
+          </Button>
+
           {invoice.status !== "PAID" && <AddItemsDialog invoice={invoice} />}
         </div>
 

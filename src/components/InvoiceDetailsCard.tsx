@@ -53,11 +53,12 @@ export function InvoiceDetailsCard({
           <p className="flex flex-col gap-x-2 text-lg">
             sសយɖəន / Address:{" "}
             <div className="flex flex-col text-sm font-normal">
-              {Object.values(address).map((val) => (
-                <p key={val} className="text-sm">
-                  {val}
-                </p>
-              ))}
+              {address &&
+                Object.values(address).map((val) => (
+                  <p key={val} className="text-sm">
+                    {val}
+                  </p>
+                ))}
             </div>
           </p>
         </div>

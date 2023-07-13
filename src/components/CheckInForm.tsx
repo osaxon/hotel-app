@@ -51,7 +51,7 @@ type GuestAddress = {
 const FormSchema = z.object({
   firstName: z.string(),
   surname: z.string(),
-  guestEmail: z.string().email(),
+  email: z.string().email(),
   roomId: z.string(),
   checkIn: z.date(),
   checkOut: z.date(),
@@ -75,9 +75,9 @@ export default function CheckInForm({
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      firstName: reservationData?.guestName.split(" ")[0] ?? "",
-      surname: reservationData?.guestName.split(" ")[1] ?? "",
-      guestEmail: reservationData?.guestEmail || "",
+      firstName: reservationData?.firstName as string,
+      surname: reservationData?.surname as string,
+      email: reservationData?.email as string,
       roomId: reservationData?.roomId || "",
       address: address,
     },
@@ -154,7 +154,7 @@ export default function CheckInForm({
         />
         <FormField
           control={form.control}
-          name="guestEmail"
+          name="email"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Guest Email</FormLabel>
