@@ -12,7 +12,6 @@ export const roomsRouter = createTRPCRouter({
     const rooms = await ctx.prisma.room.findMany({
       include: {
         reservations: true,
-        images: true,
       },
     });
     if (!rooms) throw new TRPCError({ code: "NOT_FOUND" });

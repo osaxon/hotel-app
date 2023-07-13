@@ -80,7 +80,6 @@ export default function ReservationForm({
     defaultValues: {
       checkIn: reservation.checkIn,
       checkOut: reservation.checkOut,
-      guestName: reservation.guestName,
       resItemId: reservation.reservationItem?.id,
     },
   });

@@ -215,16 +215,24 @@ export default function OrdersPage() {
                       <div
                         onClick={() => {
                           form.setValue("invoiceId", invoice.id);
-                          form.setValue("name", invoice.customerName ?? "");
+                          form.setValue("name", invoice.guest?.fullName ?? "");
                           form.setValue("guestId", invoice.guest?.id ?? "");
                         }}
                         key={invoice.id}
-                        className="flex flex-col"
+                        className="flex cursor-pointer flex-col rounded-md border p-4"
                       >
-                        <div>{invoice.customerName}</div>
-                        {invoice.reservation && (
-                          <div>Room {invoice.reservation.room?.roomNumber}</div>
-                        )}
+                        <p className="font-semibold">
+                          {invoice.guest?.fullName}
+                        </p>
+                        <div>IN{invoice.invoiceNumber}</div>
+                        {invoice.reservations &&
+                          invoice.reservations
+                            .filter((res) => res.status === "CHECKED_IN")
+                            .map((res) => (
+                              <span key={res.id}>
+                                Room {res.room?.roomNumber}
+                              </span>
+                            ))}
                       </div>
                     ))}
                 </div>

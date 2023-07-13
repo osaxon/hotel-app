@@ -2,7 +2,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import dayjs from "dayjs";
-import { getRateTotal, getDurationOfStay } from "@/lib/utils";
+import { getDurationOfStay } from "@/lib/utils";
 import {
   createTRPCRouter,
   publicProcedure,
@@ -111,7 +111,7 @@ export const reservationsRouter = createTRPCRouter({
       if (input.guestId) {
         reservation = await ctx.prisma.reservation.create({
           data: {
-            guestName: input.guestName,
+            firstName: input.guestName,
             checkIn: input.checkIn,
             checkOut: input.checkOut,
             guest: {
@@ -121,7 +121,7 @@ export const reservationsRouter = createTRPCRouter({
               connect: { id: input.resItemId },
             },
             subTotalUSD: input.subTotalUSD,
-            guestEmail: input.guestEmail,
+            email: input.guestEmail,
           },
           include: {
             room: true,
@@ -129,7 +129,7 @@ export const reservationsRouter = createTRPCRouter({
             reservationItem: true,
             invoice: {
               include: {
-                reservation: true,
+                reservations: true,
               },
             },
           },
@@ -138,21 +138,21 @@ export const reservationsRouter = createTRPCRouter({
       } else {
         reservation = await ctx.prisma.reservation.create({
           data: {
-            guestName: input.guestName,
+            firstName: input.guestName,
             checkIn: input.checkIn,
             checkOut: input.checkOut,
             reservationItem: {
               connect: { id: input.resItemId },
             },
             subTotalUSD: input.subTotalUSD,
-            guestEmail: input.guestEmail,
+            email: input.guestEmail,
           },
           include: {
             room: true,
             reservationItem: true,
             invoice: {
               include: {
-                reservation: true,
+                reservations: true,
               },
             },
           },
@@ -225,7 +225,7 @@ export const reservationsRouter = createTRPCRouter({
         surname: z.string(),
         checkIn: z.date(),
         checkOut: z.date(),
-        guestEmail: z.string().email(),
+        email: z.string().email(),
         roomId: z.string(),
         address: z.object({
           street: z.string(),
@@ -237,25 +237,33 @@ export const reservationsRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const durationInDays = getDurationOfStay(input.checkIn, input.checkOut);
-
-      // Find the latest invoice number from the database
-      const latestInvoice = await ctx.prisma.invoice.findFirst({
-        orderBy: { invoiceNumber: "desc" },
+      const existingGuest = await ctx.prisma.guest.findFirst({
+        where: {
+          email: input.email,
+        },
       });
 
-      let invoiceNumber: number;
-
-      if (latestInvoice) {
-        // Increment the latest invoice number by 1
-        invoiceNumber = parseInt(latestInvoice.invoiceNumber, 10) + 1;
-      } else {
-        // Use the starting number if no invoice exists
-        invoiceNumber = 2000;
-      }
-
-      // Format the invoice number with leading zeros
-      const formattedInvoiceNumber = invoiceNumber.toString().padStart(6, "0");
+      const updatedGuest = existingGuest
+        ? await ctx.prisma.guest.update({
+            where: {
+              id: existingGuest.id,
+            },
+            data: {
+              firstName: input.firstName,
+              surname: input.surname,
+              email: input.email,
+              address: input.address,
+            },
+          })
+        : await ctx.prisma.guest.create({
+            data: {
+              firstName: input.firstName,
+              surname: input.surname,
+              fullName: `${input.firstName} ${input.surname}`,
+              email: input.email,
+              address: input.address,
+            },
+          });
 
       const reservation: Prisma.ReservationGetPayload<{
         include: { reservationItem: true; guest: true };
@@ -265,21 +273,8 @@ export const reservationsRouter = createTRPCRouter({
           status: ReservationStatus.CHECKED_IN,
 
           guest: {
-            connectOrCreate: {
-              where: {
-                email: input.guestEmail,
-              },
-              create: {
-                firstName: input.firstName,
-                surname: input.surname,
-                fullName: `${input.firstName} ${input.surname}`,
-                currentReservationId: input.reservationId,
-                email: input.guestEmail,
-                address: input.address,
-              },
-            },
+            connect: { id: updatedGuest.id },
           },
-
           room: {
             connect: {
               id: input.roomId,
@@ -310,44 +305,8 @@ export const reservationsRouter = createTRPCRouter({
 
       if (!reservation.guestId) {
         throw new TRPCError({
-          message: "Failed to create the Guest rexcord",
+          message: "Failed to create the Guest record",
           code: "UNPROCESSABLE_CONTENT",
-        });
-      }
-
-      const invoice = await ctx.prisma.invoice.create({
-        data: {
-          invoiceNumber: formattedInvoiceNumber,
-          customerEmail: input.guestEmail,
-          customerName: input.firstName,
-          totalUSD: reservation.subTotalUSD,
-          reservation: {
-            connect: { id: reservation.id },
-          },
-          guest: {
-            connect: {
-              id: reservation.guestId,
-            },
-          },
-        },
-        include: {
-          reservation: true,
-          orders: {
-            include: {
-              items: {
-                include: {
-                  item: true,
-                },
-              },
-            },
-          },
-        },
-      });
-
-      if (!invoice) {
-        throw new TRPCError({
-          message: "Failed to generate invoice.",
-          code: "NOT_FOUND",
         });
       }
 
