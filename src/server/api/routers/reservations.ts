@@ -19,7 +19,7 @@ import {
   Guest,
   PaymentStatus,
 } from "@prisma/client";
-import { Decimal } from "@prisma/client/runtime";
+import { Decimal } from "@prisma/client/runtime/library";
 
 type ReservationWithRoom = Prisma.ReservationGetPayload<{
   include: { room: true };
