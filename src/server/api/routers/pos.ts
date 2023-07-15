@@ -12,7 +12,7 @@ import {
   type PrismaClient,
 } from "@prisma/client";
 import { isHappyHour } from "@/lib/utils";
-import { Decimal } from "@prisma/client/runtime";
+import { Decimal } from "@prisma/client/runtime/library";
 import { generateInvoiceNumber } from "@/utils/generateInvoiceNumber";
 import { type Item } from "@prisma/client";
 import { prisma } from "@/server/db";

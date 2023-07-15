@@ -121,6 +121,7 @@ export const invoiceRouter = createTRPCRouter({
         email: input.email,
         guestId: guest?.id,
       }));
+
       console.log(reservationData);
       // Format the invoice number with leading zeros
       const formattedInvoiceNumber = invoiceNumber.toString().padStart(6, "0");
