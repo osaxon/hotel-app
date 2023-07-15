@@ -21,7 +21,6 @@ import {
   CheckCheck,
   Link as LinkIcon,
   Pencil,
-  Receipt,
   User2,
 } from "lucide-react";
 import Link from "next/link";
@@ -129,11 +128,6 @@ export default function ReservationForm({
                 <CheckCheck />
                 <Label>{convertToNormalCase(reservation.status)}</Label>
               </div>
-            ) : status === "FINAL_BILL" ? (
-              <div className="flex items-center">
-                <Receipt className="text-green-600" />
-                <Label>{convertToNormalCase(reservation.status)}</Label>
-              </div>
             ) : null}
             {status !== "CHECKED_OUT" && (
               <Button variant="outline">
@@ -143,17 +137,13 @@ export default function ReservationForm({
                       ? `/check-out/${reservation.id}`
                       : status === "CONFIRMED"
                       ? `/check-in/${reservation.id}`
-                      : status === "FINAL_BILL"
-                      ? `/invoices/${reservation.invoice?.id || ""}`
-                      : "/"
+                      : `/invoices/${reservation.invoice?.id || ""}`
                   }
                 >
                   {status === "CHECKED_IN"
                     ? "Check Out"
                     : status === "CONFIRMED"
                     ? "Check In"
-                    : status === "FINAL_BILL"
-                    ? "Settle Invoice"
                     : ""}
                 </Link>
               </Button>
