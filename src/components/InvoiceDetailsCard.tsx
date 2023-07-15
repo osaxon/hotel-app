@@ -83,11 +83,32 @@ export function InvoiceDetailsCard({
             </p>
           </p>
           <p className="flex items-center gap-x-2 text-lg">
+            Balance USD:{" "}
+            <p className="text-lg">
+              {new Intl.NumberFormat("en-us", {
+                style: "currency",
+                currency: "USD",
+              }).format(Number(invoice.remainingBalanceUSD))}
+            </p>
+          </p>
+          <p className="flex items-center gap-x-2 text-lg">
             Total KHR:{" "}
             {KHRRates?.rates.KHR && (
               <p className="text-lg">
                 {formatCurrency({
                   amount: Number(invoice.totalUSD) * KHRRates?.rates.KHR,
+                  currency: "KHR",
+                })}
+              </p>
+            )}
+          </p>
+          <p className="flex items-center gap-x-2 text-lg">
+            Balance KHR:{" "}
+            {KHRRates?.rates.KHR && (
+              <p className="text-lg">
+                {formatCurrency({
+                  amount:
+                    Number(invoice.remainingBalanceUSD) * KHRRates?.rates.KHR,
                   currency: "KHR",
                 })}
               </p>

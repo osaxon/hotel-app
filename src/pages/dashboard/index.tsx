@@ -22,6 +22,18 @@ import Link from "next/link";
 
 const menuItems = [
   {
+    label: "Invoices",
+    href: "/invoices",
+    desc: "Manage and create Invoices.",
+    icon: Receipt,
+  },
+  {
+    label: "Rooms & Bookings",
+    href: "/reservations",
+    desc: "View & create reservations for guests.",
+    icon: BedDouble,
+  },
+  {
     label: "Bar",
     href: "/pos",
     desc: "Create orders for the bar & kitchen.",
@@ -32,18 +44,6 @@ const menuItems = [
     href: "/items",
     desc: "View item stock levels. Manage items for sale.",
     icon: Calculator,
-  },
-  {
-    label: "Rooms & Bookings",
-    href: "/reservations",
-    desc: "View & create reservations for guests. Manage reservation types. Manage rooms.",
-    icon: BedDouble,
-  },
-  {
-    label: "Invoices",
-    href: "/invoices",
-    desc: "View invoices for guests and accounts.",
-    icon: Receipt,
   },
   {
     label: "Accounts",

@@ -42,7 +42,8 @@ export type ItemWithQuantityAndDiscount = Item & {
 // Function to calculate the price and discount applied for an item
 async function calculateItemPriceAndDiscount(
   guestId: string | undefined,
-  item: Item
+  item: Item,
+  happyHourOverride: boolean
 ): Promise<{ price: Decimal; discountApplied: AppliedDiscount | null }> {
   const { priceUSD, happyHourPriceUSD, staffPriceUSD } = item;
 
@@ -57,7 +58,8 @@ async function calculateItemPriceAndDiscount(
     console.log("Not a guest");
     console.log("Happy hour?");
     console.log(isHappyHour());
-    isHappyHour()
+    console.log(happyHourOverride);
+    isHappyHour() || happyHourOverride
       ? ((discountApplied = AppliedDiscount.HAPPY_HOUR),
         (price = happyHourPriceUSD ?? priceUSD))
       : ((discountApplied = AppliedDiscount.NONE), (price = priceUSD));
@@ -67,7 +69,7 @@ async function calculateItemPriceAndDiscount(
       where: { id: guestId },
       select: { type: true },
     });
-    if (!isHappyHour()) {
+    if (!isHappyHour() && !happyHourOverride) {
       console.log("Not happy hour");
       console.log(`Guest type ${guest?.type ?? ""}`);
 
@@ -363,7 +365,8 @@ export const posRouter = createTRPCRouter({
           const { price, discountApplied } =
             await calculateItemPriceAndDiscount(
               guestId, // Pass the guestId if available
-              itemDataItem
+              itemDataItem,
+              false // override happyhour
             );
 
           const subTotal = price.times(item.quantity);
@@ -449,24 +452,25 @@ export const posRouter = createTRPCRouter({
       };
 
       if (invoiceId) {
+        // TODO remove
         // Retrieve the current totalUSD of the invoice
-        const invoice = await ctx.prisma.invoice.findUnique({
-          where: { id: invoiceId },
-          select: { totalUSD: true },
-        });
+        // const invoice = await ctx.prisma.invoice.findUnique({
+        //   where: { id: invoiceId },
+        //   select: { totalUSD: true },
+        // });
 
-        if (invoice && invoice.totalUSD) {
-          // Calculate the new totalUSD by adding the current totalUSD and the subTotal of the order
-          const newTotalUSD = invoice.totalUSD.plus(subTotalUSD);
+        // if (invoice && invoice.totalUSD) {
+        //   // Calculate the new totalUSD by adding the current totalUSD and the subTotal of the order
+        //   const newTotalUSD = invoice.totalUSD.plus(subTotalUSD);
 
-          // Update the Invoice totalUSD
-          await ctx.prisma.invoice.update({
-            where: { id: invoiceId },
-            data: {
-              totalUSD: newTotalUSD,
-            },
-          });
-        }
+        //   // Update the Invoice totalUSD
+        //   await ctx.prisma.invoice.update({
+        //     where: { id: invoiceId },
+        //     data: {
+        //       totalUSD: newTotalUSD,
+        //     },
+        //   });
+        // }
 
         orderData.invoice.connect = {
           id: invoiceId,
@@ -475,7 +479,7 @@ export const posRouter = createTRPCRouter({
         orderData.invoice.create = {
           customerName: name ?? "",
           invoiceNumber: await generateInvoiceNumber(),
-          totalUSD: subTotalUSD, //
+          totalUSD: subTotalUSD,
         };
 
         if (invoiceId) {
@@ -490,13 +494,14 @@ export const posRouter = createTRPCRouter({
           };
         }
       }
+
       if (input.guestId) {
         orderData.guest.connect = {
           id: input.guestId,
         };
       }
 
-      const order = await ctx.prisma.order.create({
+      const order = await ctx.xprisma.order.create({
         data: orderData,
         include: {
           items: true,
@@ -590,7 +595,9 @@ export const posRouter = createTRPCRouter({
         include: {
           guest: true,
           lineItems: true,
-          reservations: { include: { guest: true, reservationItem: true } },
+          reservations: {
+            include: { guest: true, reservationItem: true },
+          },
           orders: {
             include: {
               items: {
@@ -617,12 +624,12 @@ export const posRouter = createTRPCRouter({
       const updatedInvoice = await ctx.prisma.invoice.update({
         where: { id: input.id },
         data: {
-          status: "PAID",
+          status: input.status,
           orders: {
             updateMany: {
               where: { status: "UNPAID" },
               data: {
-                status: input.status ?? "PAID",
+                status: input.status,
               },
             },
           },
@@ -632,7 +639,7 @@ export const posRouter = createTRPCRouter({
                 invoiceId: input.id,
               },
               data: {
-                paymentStatus: "PAID",
+                paymentStatus: input.status,
               },
             },
           },
@@ -715,7 +722,9 @@ export const posRouter = createTRPCRouter({
   getOpenInvoices: privateProcedure.query(async ({ ctx }) => {
     const invoices = await ctx.prisma.invoice.findMany({
       where: {
-        status: "UNPAID",
+        status: {
+          not: "CANCELLED",
+        },
       },
       include: {
         guest: true,

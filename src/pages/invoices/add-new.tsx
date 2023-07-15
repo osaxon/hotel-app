@@ -7,11 +7,15 @@ const NewInvoicePage: NextPage = () => {
     <AdminLayout>
       <section className="flex-1 space-y-4 p-8 pt-6">
         <div className="flex items-center justify-between space-y-2">
-          <h2 className="text-3xl font-bold tracking-tight">New Invoice</h2>
+          <h2 className="text-3xl font-bold tracking-tight">
+            Create New Invoice
+          </h2>
         </div>
-        <div>
-          <p>Create a new Invoice and add Orders or Reservations.</p>
-        </div>
+        <ul className="w-2/3 space-y-1 rounded-md border p-6 text-lg">
+          <li>Use this form to set up a new Invoice for a guest.</li>
+          <li>Reservations for hotel guests can be added now.</li>
+          <li>Orders for the bar can be added later.</li>
+        </ul>
         <section>
           <NewInvoiceForm />
         </section>

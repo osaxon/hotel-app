@@ -16,6 +16,8 @@ import {
   ReservationItem,
   Reservation,
   Invoice,
+  Guest,
+  PaymentStatus,
 } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime";
 
@@ -78,22 +80,41 @@ export const reservationsRouter = createTRPCRouter({
       return resItem;
     }),
 
+  updateStatus: privateProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        status: z.nativeEnum(PaymentStatus),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // use xprisma extended client to ensure invoice
+      const updatedReservation = await ctx.xprisma.reservation.update({
+        where: { id: input.id },
+        data: {
+          paymentStatus: input.status,
+        },
+      });
+      return updatedReservation;
+    }),
+
   createReservation: privateProcedure
     .input(
       z.object({
-        guestName: z.string(),
+        addToInvoice: z.boolean(),
+        firstName: z.string(),
+        surname: z.string(),
         checkIn: z.date(),
         checkOut: z.date(),
         guestId: z.string().optional(),
-        guestEmail: z.string().email(),
+        invoiceId: z.string().optional(),
+        email: z.string().email(),
         resItemId: z.string(),
         subTotalUSD: z.number().positive().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      let reservation;
-
-      const durationInDays = getDurationOfStay(input.checkIn, input.checkOut);
+      const { guestId } = input ?? "";
       const resItem = await ctx.prisma.reservationItem.findUnique({
         where: { id: input.resItemId },
       });
@@ -105,54 +126,145 @@ export const reservationsRouter = createTRPCRouter({
         });
       }
 
-      //   const rateTotal = getRateTotal(durationInDays, resItem);
+      let invoice;
+      let guest;
 
-      // If we already have the Guest details stored
-      if (input.guestId) {
-        reservation = await ctx.prisma.reservation.create({
+      if (input.invoiceId && input.addToInvoice) {
+        console.info("fetching the invoice");
+
+        // Get the existing invoice
+        invoice = await ctx.prisma.invoice.findUnique({
+          where: { id: input.invoiceId },
+        });
+      } else {
+        // Create new invoice
+        // Find the latest invoice number from the database
+        console.info("creating invoice");
+
+        const latestInvoice = await ctx.prisma.invoice.findFirst({
+          orderBy: { invoiceNumber: "desc" },
+          select: { invoiceNumber: true },
+        });
+
+        let invoiceNumber: number;
+
+        if (latestInvoice) {
+          // Increment the latest invoice number by 1
+          invoiceNumber = parseInt(latestInvoice.invoiceNumber, 10) + 1;
+        } else {
+          // Use the starting number if no invoice exists
+          invoiceNumber = 2000;
+        }
+
+        // Format the invoice number with leading zeros
+        const formattedInvoiceNumber = invoiceNumber
+          .toString()
+          .padStart(6, "0");
+
+        invoice = await ctx.prisma.invoice.create({
           data: {
-            firstName: input.guestName,
-            checkIn: input.checkIn,
-            checkOut: input.checkOut,
-            guest: {
-              connect: { id: input.guestId },
-            },
-            reservationItem: {
-              connect: { id: input.resItemId },
-            },
-            subTotalUSD: input.subTotalUSD,
-            email: input.guestEmail,
-          },
-          include: {
-            room: true,
-            guest: true,
-            reservationItem: true,
-            invoice: {
-              include: {
-                reservations: true,
-              },
-            },
+            totalUSD: input.subTotalUSD,
+            invoiceNumber: formattedInvoiceNumber,
+            customerName: input.firstName + " " + input.surname,
+            customerEmail: input.email,
           },
         });
-        // For new guests.
-      } else {
-        reservation = await ctx.prisma.reservation.create({
+      }
+
+      if (!invoice) {
+        throw new TRPCError({
+          message: "Failed to create / retrieve the Invoice.",
+          code: "UNPROCESSABLE_CONTENT",
+        });
+      }
+
+      if (input.guestId || invoice.guestId) {
+        let guestId;
+        if (invoice.guestId) {
+          guestId = invoice.guestId;
+        } else {
+          guestId = input.guestId;
+        }
+        // Connect to existing guest
+        guest = await ctx.prisma.guest.findUnique({
+          where: { id: guestId },
+        });
+
+        if (!guest) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Guest not found.",
+          });
+        }
+      } else if (!input.guestId && !invoice.guestId) {
+        // Create new guest
+        guest = await ctx.prisma.guest.create({
           data: {
-            firstName: input.guestName,
-            checkIn: input.checkIn,
-            checkOut: input.checkOut,
-            reservationItem: {
-              connect: { id: input.resItemId },
-            },
-            subTotalUSD: input.subTotalUSD,
-            email: input.guestEmail,
+            firstName: input.firstName,
+            surname: input.surname,
+            fullName: `${input.firstName} ${input.surname}`,
+            email: input.email,
           },
-          include: {
-            room: true,
-            reservationItem: true,
-            invoice: {
-              include: {
-                reservations: true,
+        });
+      }
+
+      if (!guest) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Failed to create / find guest.",
+        });
+      }
+
+      console.info("Creating reservation");
+      // Create the reservation
+      const reservation = await ctx.xprisma.reservation.create({
+        data: {
+          firstName: input.firstName,
+          surname: input.surname,
+          checkIn: input.checkIn,
+          checkOut: input.checkOut,
+
+          guest: {
+            connect: { id: guest.id },
+          },
+
+          reservationItem: {
+            connect: { id: input.resItemId },
+          },
+
+          subTotalUSD: input.subTotalUSD,
+          email: input.email,
+          invoice: {
+            connect: { id: invoice.id },
+          },
+        },
+        include: {
+          room: true,
+          guest: true,
+          reservationItem: true,
+          invoice: {
+            include: {
+              reservations: true,
+            },
+          },
+        },
+      });
+
+      if (!reservation) {
+        throw new TRPCError({
+          message: "Failed to create the reservation.",
+          code: "UNPROCESSABLE_CONTENT",
+        });
+      }
+
+      // if no guest or invoice provided then we need to relate the new guest to the new invoice
+      if (!input.guestId && !input.addToInvoice && reservation.guest) {
+        invoice = await ctx.prisma.invoice.update({
+          where: { id: invoice.id },
+          data: {
+            guest: {
+              connect: {
+                id: reservation.guest.id,
               },
             },
           },
@@ -363,7 +475,7 @@ export const reservationsRouter = createTRPCRouter({
     const reservations = await ctx.prisma.reservation.findMany({
       where: {
         status: {
-          in: ["CHECKED_IN", "CONFIRMED", "FINAL_BILL"],
+          in: ["CHECKED_IN", "CONFIRMED"],
         },
       },
       include: {

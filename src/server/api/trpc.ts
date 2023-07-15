@@ -10,7 +10,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
 import superjson from "@/utils/superjson";
 import { ZodError } from "zod";
-import { prisma } from "@/server/db";
+import { prisma, xprisma } from "@/server/db";
 import { getAuth } from "@clerk/nextjs/server";
 import clerkClient from "@clerk/clerk-sdk-node";
 import { env } from "@/env.mjs";
@@ -37,6 +37,7 @@ export const createTRPCContext = (opts: CreateNextContextOptions) => {
 
   return {
     prisma,
+    xprisma,
     userId,
   };
 };

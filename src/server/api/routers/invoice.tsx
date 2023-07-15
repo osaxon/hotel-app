@@ -1,5 +1,6 @@
 import { createTRPCRouter, privateProcedure } from "@/server/api/trpc";
-import { ReservationStatus } from "@prisma/client";
+import { Guest, ReservationStatus } from "@prisma/client";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 export const newInvoiceInputSchema = z.object({
@@ -23,7 +24,42 @@ export const newInvoiceInputSchema = z.object({
   ),
 });
 
+const getInvoiceByIdInputSchema = z.object({
+  id: z.string(),
+});
+
 export const invoiceRouter = createTRPCRouter({
+  getOpen: privateProcedure.query(async ({ ctx }) => {
+    const invoices = await ctx.prisma.invoice.findMany({
+      where: {
+        status: {
+          not: "CANCELLED",
+        },
+      },
+      include: {
+        guest: true,
+        reservations: {
+          include: {
+            reservationItem: true,
+            room: true,
+          },
+        },
+      },
+    });
+    return invoices;
+  }),
+
+  getById: privateProcedure
+    .input(getInvoiceByIdInputSchema)
+    .query(async ({ ctx, input }) => {
+      const invoice = await ctx.prisma.invoice.findUnique({
+        where: { id: input.id },
+        include: { guest: true },
+      });
+
+      return invoice;
+    }),
+
   create: privateProcedure
     .input(newInvoiceInputSchema)
     .mutation(async ({ ctx, input }) => {
@@ -34,6 +70,7 @@ export const invoiceRouter = createTRPCRouter({
       });
 
       let invoiceNumber: number;
+      let guest: Guest | undefined = undefined;
 
       if (latestInvoice) {
         // Increment the latest invoice number by 1
@@ -43,6 +80,48 @@ export const invoiceRouter = createTRPCRouter({
         invoiceNumber = 2000;
       }
 
+      if (!input.guestId) {
+        guest = await ctx.prisma.guest.create({
+          data: {
+            firstName: input.firstName,
+            surname: input.surname,
+            fullName: input.firstName + " " + input.surname,
+            email: input.email,
+          },
+        });
+        if (!guest) {
+          throw new TRPCError({
+            message: "Failed to create the guest.",
+            code: "UNPROCESSABLE_CONTENT",
+          });
+        }
+      } else if (input.guestId) {
+        guest = (await ctx.prisma.guest.findUnique({
+          where: { id: input.guestId },
+        })) as Guest;
+        if (!guest) {
+          throw new TRPCError({
+            message: "Failed to find the guest.",
+            code: "UNPROCESSABLE_CONTENT",
+          });
+        }
+      }
+
+      if (!guest) {
+        throw new TRPCError({
+          message: "No guest record to associate with.",
+          code: "UNPROCESSABLE_CONTENT",
+        });
+      }
+
+      const reservationData = input.reservations.map((res) => ({
+        ...res,
+        firstName: input.firstName,
+        surname: input.surname,
+        email: input.email,
+        guestId: guest?.id,
+      }));
+      console.log(reservationData);
       // Format the invoice number with leading zeros
       const formattedInvoiceNumber = invoiceNumber.toString().padStart(6, "0");
 
@@ -51,19 +130,13 @@ export const invoiceRouter = createTRPCRouter({
           invoiceNumber: formattedInvoiceNumber,
           reservations: {
             createMany: {
-              data: input.reservations,
+              data: reservationData,
             },
           },
+          customerName: input.firstName + " " + input.surname,
+          customerEmail: input.email,
           guest: {
-            connectOrCreate: {
-              where: { email: input.email },
-              create: {
-                firstName: input.firstName ?? "",
-                surname: input.surname ?? "",
-                fullName: input.firstName + " " + input.surname,
-                email: input.email ?? "",
-              },
-            },
+            connect: { id: guest.id },
           },
         },
       });
@@ -77,12 +150,25 @@ export const invoiceRouter = createTRPCRouter({
         },
       });
 
+      const aggregatedOutstandingReservations =
+        await ctx.prisma.reservation.aggregate({
+          where: {
+            invoiceId: invoice.id,
+            paymentStatus: "UNPAID",
+          },
+          _sum: {
+            subTotalUSD: true,
+          },
+        });
+
       const invoiceWithTotal = await ctx.prisma.invoice.update({
         where: {
           id: invoice.id,
         },
         data: {
           totalUSD: aggregatedReservations._sum.subTotalUSD,
+          remainingBalanceUSD:
+            aggregatedOutstandingReservations._sum.subTotalUSD,
         },
       });
 

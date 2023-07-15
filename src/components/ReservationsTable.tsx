@@ -22,7 +22,6 @@ import {
   Check,
   CheckCheck,
   MoreHorizontal,
-  Receipt,
 } from "lucide-react";
 import Link from "next/link";
 import DataTable from "./DataTable";
@@ -31,7 +30,7 @@ import { Button } from "./ui/button";
 
 export const columns: ColumnDef<
   Prisma.ReservationGetPayload<{
-    include: { invoice: true; reservationItem: true };
+    include: { invoice: true; reservationItem: true; guest: true };
   }>
 >[] = [
   {
@@ -87,11 +86,11 @@ export const columns: ColumnDef<
     },
   },
   {
-    accessorKey: "guestName",
+    accessorKey: "guest.fullName",
     header: "Name",
   },
   {
-    accessorKey: "guestEmail",
+    accessorKey: "email",
     header: "Email",
   },
   {
@@ -133,13 +132,6 @@ export const columns: ColumnDef<
                     <p>Booking Confirmed</p>
                   </TooltipContent>
                 </>
-              ) : status === "FINAL_BILL" ? (
-                <>
-                  <Receipt className="text-green-600" />
-                  <TooltipContent>
-                    <p>Final Bill Ready</p>
-                  </TooltipContent>
-                </>
               ) : status === "CHECKED_OUT" ? (
                 <>
                   <CheckCheck />
@@ -153,6 +145,10 @@ export const columns: ColumnDef<
         </TooltipProvider>
       );
     },
+  },
+  {
+    accessorKey: "room.roomNumber",
+    header: "Room",
   },
   {
     id: "actions",
@@ -208,7 +204,7 @@ export function ReservationsTable() {
 
   return (
     <DataTable
-      filterColumn="guestName"
+      filterColumn="guest.fullName"
       filterPlaceholder="Filter name"
       data={reservations}
       columns={columns}

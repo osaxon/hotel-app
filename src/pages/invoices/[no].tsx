@@ -44,7 +44,7 @@ const InvoicePage: NextPage = () => {
     }
   );
 
-  const { mutate: markAsPaid, isLoading: isUpdatingStatus } =
+  const { mutate: updateStatus, isLoading: isUpdatingStatus } =
     api.pos.updateInvoiceStatus.useMutation({
       async onMutate({ id, status }) {
         // Cancel outgoing fetches
@@ -60,7 +60,7 @@ const InvoicePage: NextPage = () => {
           if (!prev) return prevData;
           return {
             ...prev,
-            status: "PAID",
+            status: status,
           };
         });
 
@@ -78,37 +78,59 @@ const InvoicePage: NextPage = () => {
   return (
     <AdminLayout>
       <section className="flex-1 space-y-4 p-8 pt-6">
-        <div className="flex items-center justify-between gap-2 sm:justify-start">
-          <Button
-            className="flex items-center gap-x-1 text-sm print:hidden"
-            variant="ghost"
-            size="sm"
-            onClick={() => window.print()}
-          >
-            <Printer className="h-4" />
-            Print
-          </Button>
-          {invoice.status !== "PAID" && (
-            <Button
-              className="flex items-center gap-x-1 text-sm print:hidden"
-              variant="ghost"
-              size="sm"
-              onClick={() => markAsPaid({ id: invoice.id, status: "PAID" })}
-            >
-              <Receipt className="h-4" />
-              {isUpdatingStatus ? <LoadingSpinner size={36} /> : "Paid"}
-            </Button>
+        <div className="flex items-center justify-between gap-2 print:hidden sm:justify-start">
+          {invoice.status !== "CANCELLED" && (
+            <>
+              <Button
+                className="flex items-center gap-x-1 text-sm print:hidden"
+                variant="ghost"
+                size="sm"
+                onClick={() => window.print()}
+              >
+                <Printer className="h-4" />
+                Print
+              </Button>
+              {invoice.status !== "PAID" && (
+                <>
+                  <Button
+                    className="flex items-center gap-x-1 text-sm print:hidden"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      updateStatus({ id: invoice.id, status: "PAID" })
+                    }
+                  >
+                    <Receipt className="h-4" />
+                    {isUpdatingStatus ? <LoadingSpinner size={36} /> : "Paid"}
+                  </Button>
+                  <Button
+                    className="flex items-center gap-x-1 text-sm print:hidden"
+                    variant="ghost"
+                    size="sm"
+                  >
+                    <CheckCheck className="h-4" />
+                    Check out
+                  </Button>
+                  <AddItemsDialog invoice={invoice} />
+                </>
+              )}
+              <Button
+                className="flex items-center gap-x-1 text-sm print:hidden"
+                variant="destructive"
+                size="sm"
+                onClick={() =>
+                  updateStatus({ id: invoice.id, status: "CANCELLED" })
+                }
+              >
+                {isUpdatingStatus ? <LoadingSpinner size={36} /> : "Cancel"}
+              </Button>
+            </>
           )}
-          <Button
-            className="flex items-center gap-x-1 text-sm print:hidden"
-            variant="ghost"
-            size="sm"
-          >
-            <CheckCheck className="h-4" />
-            Check out
-          </Button>
-
-          {invoice.status !== "PAID" && <AddItemsDialog invoice={invoice} />}
+          {invoice.status === "CANCELLED" && (
+            <p className="w-full bg-destructive text-center text-lg font-bold uppercase text-destructive-foreground">
+              invoice cancelled
+            </p>
+          )}
         </div>
 
         <CompanyDetailsCard />

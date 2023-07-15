@@ -94,11 +94,12 @@ model Reservation {
 }
 
 model Invoice {
-    id            String        @id @default(cuid())
-    invoiceNumber String        @unique
-    lineItems     InvoiceItem[]
-    createdAt     DateTime      @default(now())
-    totalUSD      Decimal?      @db.Decimal(10, 2)
+    id                  String        @id @default(cuid())
+    invoiceNumber       String        @unique
+    lineItems           InvoiceItem[]
+    createdAt           DateTime      @default(now())
+    totalUSD            Decimal?      @db.Decimal(10, 2)
+    remainingBalanceUSD Decimal?      @db.Decimal(10, 2)
 
     reservations Reservation[]
 
@@ -217,6 +218,7 @@ model ItemOrders {
 enum OrderStatus {
     PAID
     UNPAID
+    CANCELLED
 }
 
 enum BoardType {
@@ -227,8 +229,8 @@ enum BoardType {
 enum ReservationStatus {
     CONFIRMED
     CHECKED_IN
-    FINAL_BILL
     CHECKED_OUT
+    CANCELLED
 }
 
 enum ItemCategory {
@@ -273,6 +275,7 @@ enum RoomVariant {
 enum PaymentStatus {
     PAID
     UNPAID
+    CANCELLED
 }
 
 enum TaskType {
