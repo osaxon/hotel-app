@@ -4,6 +4,7 @@ import InvoiceSummary from "@/components/InvoiceSummary";
 import AdminLayout from "@/components/LayoutAdmin";
 import LoadingSpinner, { LoadingPage } from "@/components/loading";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -175,6 +176,7 @@ function AddItemsDialog({
 }) {
   const [category, setCategory] = useState<string>("");
   const [selectedItems, setSelectedItems] = useState<ItemWithQuantity[]>([]);
+  const [useHappyHourPrices, setUseHappyHourPrices] = useState<boolean>(false);
   const router = useRouter();
   const { data: items, isLoading, isError } = api.pos.getItems.useQuery();
 
@@ -213,6 +215,7 @@ function AddItemsDialog({
       invoiceId: invoice.id,
       guestId: invoice.guest?.id,
       items: selectedItems,
+      useHappyHourPrice: useHappyHourPrices,
     });
   }
 
@@ -228,6 +231,23 @@ function AddItemsDialog({
           <DialogTitle>Update Invoice</DialogTitle>
           <DialogDescription>Add Items to the invoice.</DialogDescription>
         </DialogHeader>
+        <div className="items-top flex space-x-2">
+          <Checkbox
+            onCheckedChange={() => setUseHappyHourPrices(!useHappyHourPrices)}
+            id="happyHour"
+          />
+          <div className="grid gap-1.5 leading-none">
+            <label
+              htmlFor="happyHour"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Use Happy Hour Prices
+            </label>
+            <p className="text-sm text-muted-foreground">
+              Overrides the automatic Happy Hour price check.
+            </p>
+          </div>
+        </div>
         <div className="grid max-h-[55vh] gap-4 overflow-y-scroll py-4">
           {!category
             ? types &&

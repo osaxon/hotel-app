@@ -147,6 +147,7 @@ const createOrderInputSchema = z
     guestId: z.string().optional(),
     invoiceId: z.string().optional(),
     reservationId: z.string().optional(),
+    useHappyHourPrice: z.boolean().default(false),
   })
   .transform(async (data) => {
     const itemsWithDetails = await Promise.all(
@@ -366,7 +367,7 @@ export const posRouter = createTRPCRouter({
             await calculateItemPriceAndDiscount(
               guestId, // Pass the guestId if available
               itemDataItem,
-              false // override happyhour
+              input.useHappyHourPrice // overrides happyhour
             );
 
           const subTotal = price.times(item.quantity);

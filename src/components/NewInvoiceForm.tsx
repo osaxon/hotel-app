@@ -9,7 +9,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { cn, convertToNormalCase, formatCurrency } from "@/lib/utils";
+import { cn, convertToNormalCase } from "@/lib/utils";
 import { api } from "@/utils/api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ReservationStatus } from "@prisma/client";
@@ -122,6 +122,9 @@ export default function NewInvoiceForm() {
     mode: "onSubmit",
   });
 
+  const returnGuest = form.watch("returningGuest");
+  const reservations = form.watch("reservations");
+
   //   const {
   //     fields: orderFields,
   //     append: appendOrder,
@@ -197,7 +200,7 @@ export default function NewInvoiceForm() {
               </FormItem>
             )}
           />
-          {form.getValues("returningGuest") ? (
+          {returnGuest ? (
             <FormField
               control={form.control}
               name="guestId"
@@ -423,10 +426,7 @@ export default function NewInvoiceForm() {
                     <FormItem>
                       <FormLabel>Sub-total USD</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder={formatCurrency({ amount: 0 })}
-                          {...field}
-                        />
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -479,20 +479,25 @@ export default function NewInvoiceForm() {
             </div>
           ))}
           <Button
-            onClick={() =>
+            onClick={() => {
               appendReservation({
                 firstName: form.getValues("reservations")[0]?.firstName ?? "",
                 surname: form.getValues("reservations")[0]?.surname ?? "",
                 email: form.getValues("reservations")[0]?.email ?? "",
                 reservationItemId: "",
-                checkIn:
-                  form.getValues("reservations")[0]?.checkIn ?? new Date(),
-                checkOut:
-                  form.getValues("reservations")[0]?.checkOut ?? new Date(),
+                checkIn: form.watch("reservations")[0]?.checkIn ?? new Date(),
+                checkOut: form.watch("reservations")[0]?.checkOut ?? new Date(),
                 subTotalUSD: 0,
                 status: ReservationStatus.CONFIRMED,
-              })
-            }
+              });
+              if (reservations && reservations.length) {
+                form.setFocus(
+                  `reservations.${reservations.length - 1}.reservationItemId`
+                );
+              } else {
+                form.setFocus(`reservations.0.status`);
+              }
+            }}
             variant="secondary"
             className="flex gap-2"
             type="button"

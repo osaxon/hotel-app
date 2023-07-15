@@ -62,7 +62,7 @@ model Reservation {
     userId  String?
 
     room        Room?       @relation(fields: [roomId], references: [id])
-    roomId      String?     @unique
+    roomId      String?
     roomType    RoomType?   @default(STANDARD)
     roomVariant RoomVariant @default(POOL_VIEW)
 
@@ -81,7 +81,7 @@ model Reservation {
     surname   String?
     email     String?
 
-    subTotalUSD   Decimal?      @db.Decimal(10, 2)
+    subTotalUSD   Decimal?      @default(0) @db.Decimal(10, 2)
     paymentStatus PaymentStatus @default(UNPAID)
 
     invoiceId String?
