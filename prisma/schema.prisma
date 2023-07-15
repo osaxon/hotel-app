@@ -171,7 +171,7 @@ model ItemIngredient {
     parentItems  Item[]   @relation("ItemIngredients")
     ingredientId String?
     ingredient   Item?    @relation("UsedByItems", fields: [ingredientId], references: [id])
-    quantity     Decimal? @db.Decimal(10, 2)
+    quantity     Decimal? @db.Decimal(10, 4)
     quantityUnit String?
 
     @@index([ingredientId])

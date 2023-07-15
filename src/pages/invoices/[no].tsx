@@ -166,7 +166,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
 export default InvoicePage;
 
-const types = ["Drinks", "Services"];
+const types = ["Drinks", "Services", "Food"];
 
 function AddItemsDialog({
   invoice,
@@ -248,13 +248,16 @@ function AddItemsDialog({
                     return (
                       item.category !== "TICKETS" &&
                       item.category !== "SERVICES" &&
-                      item.category !== "INGREDIENT"
+                      item.category !== "INGREDIENT" &&
+                      item.category !== "FOOD"
                     );
                   } else if (category === "Services") {
                     return (
                       item.category === "TICKETS" ||
                       item.category === "SERVICES"
                     );
+                  } else if (category === "Food") {
+                    return item.category === "FOOD";
                   }
                 })
                 .map((item) => {
