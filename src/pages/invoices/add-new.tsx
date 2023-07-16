@@ -1,5 +1,6 @@
 import AdminLayout from "@/components/LayoutAdmin";
 import NewInvoiceForm from "@/components/NewInvoiceForm";
+import { Info } from "lucide-react";
 import type { NextPage } from "next";
 
 const NewInvoicePage: NextPage = () => {
@@ -11,11 +12,13 @@ const NewInvoicePage: NextPage = () => {
             Create New Invoice
           </h2>
         </div>
-        <ul className="w-2/3 space-y-1 rounded-md border p-6 text-lg">
-          <li>Use this form to set up a new Invoice for a guest.</li>
-          <li>Reservations for hotel guests can be added now.</li>
-          <li>Orders for the bar can be added later.</li>
-        </ul>
+        <div className="flex w-full gap-2 rounded-md border border-muted bg-muted p-4 text-muted-foreground md:w-2/3">
+          <Info className="mt-[1px] h-6 w-6 shrink-0 text-blue-500" />
+          <p>
+            Use this form to set up a new Invoice for a guest. Reservations for
+            hotel guests can be added now and Orders can be added later.
+          </p>
+        </div>
         <section>
           <NewInvoiceForm />
         </section>

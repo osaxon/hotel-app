@@ -41,7 +41,9 @@ import {
   SelectValue,
 } from "./ui/select";
 
+import Link from "next/link";
 import { Switch } from "./ui/switch";
+import { ToastAction } from "./ui/toast";
 import { toast } from "./ui/use-toast";
 
 const FormSchema = z.object({
@@ -106,12 +108,21 @@ export default function NewInvoiceForm() {
 
   const { mutate: addInvoice } = api.invoice.create.useMutation({
     onSuccess: (data) => {
+      //   toast({
+      //     title: "The data:",
+      //     description: (
+      //       <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
+      //         <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+      //       </pre>
+      //     ),
+      //   });
       toast({
-        title: "The data:",
-        description: (
-          <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-            <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-          </pre>
+        title: `Invoice created.`,
+        description: `IN${data.invoiceNumber}.`,
+        action: (
+          <ToastAction altText="go to invoice">
+            <Link href={`/invoices/${data.invoiceNumber}`}>View</Link>
+          </ToastAction>
         ),
       });
     },
@@ -124,19 +135,6 @@ export default function NewInvoiceForm() {
 
   const returnGuest = form.watch("returningGuest");
   const reservations = form.watch("reservations");
-
-  //   const {
-  //     fields: orderFields,
-  //     append: appendOrder,
-  //     prepend: prependOrder,
-  //     remove: removeOrder,
-  //     swap: swapOrder,
-  //     move: moveOrder,
-  //     insert: insertOrder,
-  //   } = useFieldArray({
-  //     control: form.control,
-  //     name: "orders", // unique name for your Field Array
-  //   });
 
   const {
     fields: reservationFields,
@@ -153,14 +151,14 @@ export default function NewInvoiceForm() {
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
     addInvoice(data);
-    toast({
-      title: "The data:",
-      description: (
-        <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
+    // toast({
+    //   title: "The data:",
+    //   description: (
+    //     <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
+    //       <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+    //     </pre>
+    //   ),
+    // });
   }
 
   if (isLoadingGuests || isLoadingGuests || isLoadingResItems)

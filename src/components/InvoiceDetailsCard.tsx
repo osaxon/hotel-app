@@ -10,6 +10,7 @@ import {
 
 import { formatCurrency } from "@/lib/utils";
 import { api } from "@/utils/api";
+import Link from "next/link";
 import { useState } from "react";
 
 type GuestAddress = {
@@ -48,7 +49,12 @@ export function InvoiceDetailsCard({
         <div className="p-2">
           <p className="flex items-center gap-x-2 text-lg">
             អតិថិជន / Customer:{" "}
-            <p className="text-lg">{invoice.customerName}</p>
+            <Link
+              href={`/accounts/${invoice.guestId as string}`}
+              className="text-lg"
+            >
+              {invoice.customerName}
+            </Link>
           </p>
           <p className="flex flex-col gap-x-2 text-lg">
             sសយɖəន / Address:{" "}
@@ -115,27 +121,6 @@ export function InvoiceDetailsCard({
             )}
           </p>
         </div>
-
-        {/* <p className="text-lg font-semibold">Status</p>
-
-        <Select
-          onValueChange={(value) => setUpdatedStatus(value as PaymentStatus)}
-          defaultValue={invoice.status}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Status" defaultValue={invoice.status} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Status</SelectLabel>
-              {Object.values(PaymentStatus).map((status) => (
-                <SelectItem key={status} value={status}>
-                  {status}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select> */}
       </CardContent>
       <CardFooter></CardFooter>
     </Card>
