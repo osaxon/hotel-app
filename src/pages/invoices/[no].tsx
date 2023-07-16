@@ -3,6 +3,17 @@ import { InvoiceDetailsCard } from "@/components/InvoiceDetailsCard";
 import InvoiceSummary from "@/components/InvoiceSummary";
 import AdminLayout from "@/components/LayoutAdmin";
 import LoadingSpinner, { LoadingPage } from "@/components/loading";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -102,7 +113,11 @@ const InvoicePage: NextPage = () => {
                     }
                   >
                     <Receipt className="h-4" />
-                    {isUpdatingStatus ? <LoadingSpinner size={36} /> : "Paid"}
+                    {isUpdatingStatus ? (
+                      <LoadingSpinner size={36} />
+                    ) : (
+                      "Mark as Paid"
+                    )}
                   </Button>
                   <Button
                     className="flex items-center gap-x-1 text-sm print:hidden"
@@ -115,16 +130,10 @@ const InvoicePage: NextPage = () => {
                   <AddItemsDialog invoice={invoice} />
                 </>
               )}
-              <Button
-                className="flex items-center gap-x-1 text-sm print:hidden"
-                variant="destructive"
-                size="sm"
-                onClick={() =>
-                  updateStatus({ id: invoice.id, status: "CANCELLED" })
-                }
-              >
-                {isUpdatingStatus ? <LoadingSpinner size={36} /> : "Cancel"}
-              </Button>
+              <CancelInvoiceDialog
+                invoiceId={invoice.id}
+                invoiceNumber={invoiceNumber}
+              />
             </>
           )}
           {invoice.status === "CANCELLED" && (
@@ -315,5 +324,74 @@ function AddItemsDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function CancelInvoiceDialog({
+  invoiceNumber,
+  invoiceId,
+}: {
+  invoiceNumber: string;
+  invoiceId: string;
+}) {
+  const utils = api.useContext();
+  const { mutate: updateStatus, isLoading: isUpdatingStatus } =
+    api.invoice.updateStatus.useMutation({
+      async onMutate({ id, status }) {
+        // Cancel outgoing fetches
+        // TODO move invoice queries to invoice router
+        await utils.pos.getInvoiceByNumber.cancel({ invoiceNumber });
+
+        // Snapshot current state
+
+        const prevData = utils.pos.getInvoiceByNumber.getData({
+          invoiceNumber,
+        });
+
+        // Optimistically update
+
+        utils.pos.getInvoiceByNumber.setData({ invoiceNumber }, (prev) => {
+          if (!prev) return prevData;
+          return {
+            ...prev,
+            status: status,
+          };
+        });
+
+        // return snapshot
+        return { prevData };
+      },
+      async onSettled() {
+        await utils.pos.getInvoiceByNumber.invalidate({ invoiceNumber });
+      },
+    });
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline">Cancel</Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will cancel the curret invoice
+            and all related Reservations and Orders.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() =>
+              updateStatus({
+                id: invoiceId,
+                status: "CANCELLED",
+              })
+            }
+          >
+            Continue
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

@@ -67,6 +67,28 @@ export const xprisma = prisma.$extends({
         await updateInvoiceTotal(invoice.id);
         return invoice;
       },
+      update: async ({ model, operation, args, query }) => {
+        const { data } = args;
+        const { status } = data;
+        const updatedInvoice = await query(args);
+
+        if (updatedInvoice && status) {
+          const previousInvoice = await prisma.invoice.findUnique({
+            where: { id: args.where.id },
+            select: { status: true, id: true },
+          });
+
+          if (previousInvoice && previousInvoice.status !== status) {
+            // Payment status has been changed, update the invoice
+            const { id } = previousInvoice;
+            if (id) {
+              await updateInvoiceTotal(id);
+            }
+          }
+        }
+
+        return updatedInvoice;
+      },
     },
     order: {
       create: async ({ model, operation, args, query }) => {

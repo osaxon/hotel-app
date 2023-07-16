@@ -1,5 +1,5 @@
 import { createTRPCRouter, privateProcedure } from "@/server/api/trpc";
-import { Guest, ReservationStatus } from "@prisma/client";
+import { Guest, PaymentStatus, ReservationStatus } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -58,6 +58,43 @@ export const invoiceRouter = createTRPCRouter({
       });
 
       return invoice;
+    }),
+
+  updateStatus: privateProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        status: z.nativeEnum(PaymentStatus),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Use extended client to re-calculate totals
+      const updatedInvoice = await ctx.xprisma.invoice.update({
+        where: { id: input.id },
+        data: {
+          status: input.status,
+          orders: {
+            updateMany: {
+              where: { status: "UNPAID" },
+              data: {
+                status: input.status,
+              },
+            },
+          },
+          reservations: {
+            updateMany: {
+              where: {
+                invoiceId: input.id,
+              },
+              data: {
+                paymentStatus: input.status,
+              },
+            },
+          },
+        },
+      });
+
+      return updatedInvoice;
     }),
 
   create: privateProcedure
