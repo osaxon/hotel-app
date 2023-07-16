@@ -27,7 +27,7 @@ export const columns: ColumnDef<Guest>[] = [
     cell: ({ row }) => {
       const guestId: string = row.getValue("id");
       return (
-        <Link href={`/guests/${guestId}`} className="uppercase underline">
+        <Link href={`/accounts/${guestId}`} className="uppercase underline">
           {guestId.slice(0, 10)}...
         </Link>
       );
