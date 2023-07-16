@@ -221,9 +221,7 @@ export default function OrdersPage() {
                         key={invoice.id}
                         className="flex cursor-pointer flex-col rounded-md border p-4"
                       >
-                        <p className="font-semibold">
-                          {invoice.guest?.fullName}
-                        </p>
+                        <p className="font-semibold">{invoice.customerName}</p>
                         <div>IN{invoice.invoiceNumber}</div>
                         {invoice.reservations &&
                           invoice.reservations
