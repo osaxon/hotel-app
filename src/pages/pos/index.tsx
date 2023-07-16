@@ -116,7 +116,7 @@ export default function OrdersPage() {
       items: selectedItems,
     };
 
-    createOrder(orderPayload);
+    createOrder({ ...orderPayload, useHappyHourPrice: isHappyHour() });
   }
 
   if (isLoadingItems || isLoadingGuests || isLoadingInvoices)
