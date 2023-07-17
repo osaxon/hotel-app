@@ -33,9 +33,21 @@ export const xprisma = prisma.$extends({
       },
       update: async ({ model, operation, args, query }) => {
         const { data } = args;
-        const { paymentStatus } = data;
+        const { paymentStatus, invoiceId: newInvoiceId } = data;
+
+        // Fetch the reservation's current data
+        const currentReservation = await prisma.reservation.findUnique({
+          where: { id: args.where.id },
+          select: { invoiceId: true },
+        });
+
+        console.log(
+          currentReservation && currentReservation.invoiceId === newInvoiceId
+        );
+
         const updatedReservation = await query(args);
 
+        // If paymentStatus is updated
         if (updatedReservation && paymentStatus) {
           const previousReservation = await prisma.reservation.findUnique({
             where: { id: args.where.id },
@@ -51,6 +63,29 @@ export const xprisma = prisma.$extends({
             if (invoiceId) {
               await updateInvoiceTotal(invoiceId);
             }
+          }
+        }
+
+        // If invoiceId is updated
+        if (
+          updatedReservation &&
+          newInvoiceId &&
+          currentReservation &&
+          currentReservation.invoiceId !== newInvoiceId
+        ) {
+          console.log("invoice id changed");
+
+          const previousInvoiceId = currentReservation.invoiceId;
+          // Update the previous invoice total
+          if (previousInvoiceId) {
+            console.log(`Updating previous invoice ${previousInvoiceId}`);
+            await updateInvoiceTotal(previousInvoiceId);
+          }
+
+          // Update the new invoice total
+          if (typeof newInvoiceId === "string") {
+            console.log(`Updating new invoice ${newInvoiceId}`);
+            await updateInvoiceTotal(newInvoiceId);
           }
         }
 

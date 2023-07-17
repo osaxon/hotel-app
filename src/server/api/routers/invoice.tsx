@@ -4,24 +4,26 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 export const newInvoiceInputSchema = z.object({
-  returningGuest: z.boolean().default(false),
+  returningGuest: z.boolean().default(false).optional(),
   guestId: z.string().optional(),
   firstName: z.string(),
   surname: z.string(),
   email: z.string(),
-  reservations: z.array(
-    z.object({
-      // Define the properties of each object in the array
-      firstName: z.string(),
-      surname: z.string(),
-      email: z.string(),
-      reservationItemId: z.string(),
-      checkIn: z.date(),
-      checkOut: z.date(),
-      subTotalUSD: z.number().positive().optional(),
-      status: z.nativeEnum(ReservationStatus),
-    })
-  ),
+  reservations: z
+    .array(
+      z.object({
+        // Define the properties of each object in the array
+        firstName: z.string(),
+        surname: z.string(),
+        email: z.string(),
+        reservationItemId: z.string(),
+        checkIn: z.date(),
+        checkOut: z.date(),
+        subTotalUSD: z.number().positive().optional(),
+        status: z.nativeEnum(ReservationStatus),
+      })
+    )
+    .optional(),
 });
 
 const getInvoiceByIdInputSchema = z.object({
@@ -151,7 +153,7 @@ export const invoiceRouter = createTRPCRouter({
         });
       }
 
-      const reservationData = input.reservations.map((res) => ({
+      const reservationData = input.reservations?.map((res) => ({
         ...res,
         firstName: input.firstName,
         surname: input.surname,
@@ -168,7 +170,7 @@ export const invoiceRouter = createTRPCRouter({
           invoiceNumber: formattedInvoiceNumber,
           reservations: {
             createMany: {
-              data: reservationData,
+              data: reservationData ?? [],
             },
           },
           customerName: input.firstName + " " + input.surname,

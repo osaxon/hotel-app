@@ -12,9 +12,14 @@ const ReservationPage: NextPage = () => {
 
   const resId = id as string;
 
-  const { data: reservation, isLoading } = api.reservations.getByID.useQuery({
-    id: resId,
-  });
+  const { data: reservation, isLoading } = api.reservations.getByID.useQuery(
+    {
+      id: resId,
+    },
+    {
+      enabled: resId !== null && resId !== undefined,
+    }
+  );
 
   if (isLoading) return <LoadingPage />;
   if (!reservation) return <>No data found</>;

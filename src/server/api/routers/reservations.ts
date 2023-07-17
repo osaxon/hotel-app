@@ -98,6 +98,37 @@ export const reservationsRouter = createTRPCRouter({
       return updatedReservation;
     }),
 
+  update: privateProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        firstName: z.string(),
+        surname: z.string(),
+        invoiceId: z.string(),
+        resItemId: z.string(),
+        roomId: z.string().optional(),
+        guestId: z.string().optional(),
+        checkIn: z.date(),
+        checkOut: z.date(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const updatedReservation = await ctx.xprisma.reservation.update({
+        where: { id: input.id },
+        data: {
+          firstName: input.firstName,
+          surname: input.surname,
+          invoiceId: input.invoiceId,
+          reservationItemId: input.resItemId,
+          roomId: input.roomId,
+          guestId: input.guestId,
+          checkIn: input.checkIn,
+          checkOut: input.checkOut,
+        },
+      });
+      return updatedReservation;
+    }),
+
   createReservation: privateProcedure
     .input(
       z.object({
