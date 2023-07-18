@@ -25,10 +25,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useForm } from "react-hook-form";
+
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/use-toast";
 import { type ItemWithQuantity } from "@/server/api/routers/pos";
 import { generateSSGHelper } from "@/server/helpers/ssgHelper";
 import { api } from "@/utils/api";
 import { buildClerkProps, getAuth } from "@clerk/nextjs/server";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Item, PaymentStatus, Prisma } from "@prisma/client";
 import dayjs from "dayjs";
 import advancedFormat from "dayjs/plugin/advancedFormat";
@@ -36,6 +49,18 @@ import { CheckCheck, PlusSquare, Printer, Receipt } from "lucide-react";
 import type { GetServerSideProps, NextPage } from "next";
 import { useRouter } from "next/router";
 import { useState } from "react";
+import { z } from "zod";
+
+const ManualOrderFormSchema = z.object({
+  note: z.string(),
+  subTotalUSD: z
+    .string()
+    .refine((value) => !isNaN(parseFloat(value)), {
+      message: "Total must be a valid number.",
+      path: ["subTotalUSD"],
+    })
+    .transform((value) => parseFloat(value)),
+});
 
 dayjs.extend(advancedFormat);
 
@@ -176,7 +201,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
 export default InvoicePage;
 
-const types = ["Drinks", "Services", "Food"];
+const types = ["Drinks", "Services", "Food", "Manual"];
 
 function AddItemsDialog({
   invoice,
@@ -189,10 +214,18 @@ function AddItemsDialog({
   const router = useRouter();
   const { data: items, isLoading, isError } = api.pos.getItems.useQuery();
 
+  const form = useForm<z.infer<typeof ManualOrderFormSchema>>({
+    resolver: zodResolver(ManualOrderFormSchema),
+  });
+
   const { mutate: createOrder, isLoading: isAddingOrder } =
     api.pos.createOrder.useMutation({
       onSuccess: () => router.reload(),
     });
+
+  const { mutate: createManualOrder } = api.pos.createManualOrder.useMutation({
+    onSuccess: () => router.reload(),
+  });
 
   function handleAdd(item: Item) {
     const selectedItem = selectedItems.find(
@@ -228,6 +261,26 @@ function AddItemsDialog({
     });
   }
 
+  function onSubmit(data: z.infer<typeof ManualOrderFormSchema>) {
+    const orderPayload = {
+      ...data,
+      customerName: invoice.customerName ?? "",
+      invoiceId: invoice.id ?? "",
+      guestId: invoice.guestId ?? "",
+    };
+    createManualOrder(orderPayload);
+    toast({
+      title: "The data:",
+      description: (
+        <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
+          <code className="text-white">
+            {JSON.stringify(orderPayload, null, 2)}
+          </code>
+        </pre>
+      ),
+    });
+  }
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -258,53 +311,87 @@ function AddItemsDialog({
           </div>
         </div>
         <div className="grid max-h-[55vh] gap-4 overflow-y-scroll py-4">
-          {!category
-            ? types &&
-              types.map((type) => (
-                <Button
-                  onClick={() => setCategory(type)}
-                  variant="outline"
-                  size="lg"
-                  key={type}
-                >
-                  {type}
-                </Button>
-              ))
-            : items &&
-              items
-                .filter((item) => {
-                  if (category === "Drinks") {
-                    return (
-                      item.category !== "TICKETS" &&
-                      item.category !== "SERVICES" &&
-                      item.category !== "INGREDIENT" &&
-                      item.category !== "FOOD"
-                    );
-                  } else if (category === "Services") {
-                    return (
-                      item.category === "TICKETS" ||
-                      item.category === "SERVICES"
-                    );
-                  } else if (category === "Food") {
-                    return item.category === "FOOD";
-                  }
-                })
-                .map((item) => {
-                  const selectedItem = selectedItems.find(
-                    (selectedItem) => selectedItem.id === item.id
-                  );
+          {!category ? (
+            types &&
+            types.map((type) => (
+              <Button
+                onClick={() => setCategory(type)}
+                variant="outline"
+                size="lg"
+                key={type}
+              >
+                {type}
+              </Button>
+            ))
+          ) : category !== "Manual" ? (
+            items &&
+            items
+              .filter((item) => {
+                if (category === "Drinks") {
                   return (
-                    <Button
-                      className="flex items-center justify-between"
-                      variant="outline"
-                      onClick={() => handleAdd(item)}
-                      key={item.name}
-                    >
-                      {item.name}
-                      <p>+{selectedItem?.quantity ?? ""}</p>
-                    </Button>
+                    item.category !== "TICKETS" &&
+                    item.category !== "SERVICES" &&
+                    item.category !== "INGREDIENT" &&
+                    item.category !== "FOOD"
                   );
-                })}
+                } else if (category === "Services") {
+                  return (
+                    item.category === "TICKETS" || item.category === "SERVICES"
+                  );
+                } else if (category === "Food") {
+                  return item.category === "FOOD";
+                }
+              })
+              .map((item) => {
+                const selectedItem = selectedItems.find(
+                  (selectedItem) => selectedItem.id === item.id
+                );
+                return (
+                  <Button
+                    className="flex items-center justify-between"
+                    variant="outline"
+                    onClick={() => handleAdd(item)}
+                    key={item.name}
+                  >
+                    {item.name}
+                    <p>+{selectedItem?.quantity ?? ""}</p>
+                  </Button>
+                );
+              })
+          ) : (
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="w-full shrink-0 space-y-6 p-1"
+              >
+                <FormField
+                  control={form.control}
+                  name="note"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Note</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="subTotalUSD"
+                  render={({ field }) => (
+                    <FormItem className="w-1/3">
+                      <FormLabel>Total USD</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </form>
+            </Form>
+          )}
         </div>
         <DialogFooter className="flex flex-col gap-4">
           <Button
@@ -312,15 +399,21 @@ function AddItemsDialog({
             onClick={() => setCategory("")}
             type="reset"
           >
-            Clear
+            Reset
           </Button>
-          <Button
-            disabled={selectedItems.length < 1}
-            onClick={() => addToInvoice()}
-            type="submit"
-          >
-            Add to Invoice
-          </Button>
+          {category === "Manual" ? (
+            <Button onClick={form.handleSubmit(onSubmit)} type="submit">
+              Add to Invoice
+            </Button>
+          ) : (
+            <Button
+              disabled={selectedItems.length < 1}
+              onClick={() => addToInvoice()}
+              type="submit"
+            >
+              Add to Invoice
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

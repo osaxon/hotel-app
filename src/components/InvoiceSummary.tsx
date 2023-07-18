@@ -127,60 +127,104 @@ export default function InvoiceSummary({
           })}
 
         {orders &&
-          orders.map(
-            (order) =>
-              order.items &&
-              order.items.map((item) => {
-                const itemPrice =
-                  order.appliedDiscount === "HAPPY_HOUR"
-                    ? item.item.happyHourPriceUSD
-                    : order.appliedDiscount === "STAFF"
-                    ? item.item.staffPriceUSD
-                    : item.item.priceUSD;
-                const amount = Number(itemPrice);
-                const formattedPrice = new Intl.NumberFormat("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                }).format(amount);
-                const formattedSubTotal = new Intl.NumberFormat("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                }).format(amount * item.quantity);
-                return (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <Link className="underline" href={`/orders/${order.id}`}>
-                        {item.item.descForInvoice}{" "}
-                        {order.appliedDiscount !== "NONE"
-                          ? order.appliedDiscount + " discount"
-                          : ""}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      {dayjs(order.createdAt).format("DD MMM YY")}
-                    </TableCell>
+          orders
+            .filter((order) => order.isManualOrder === false)
+            .map(
+              (order, index) =>
+                order.items &&
+                order.items.map((item) => {
+                  const itemPrice =
+                    order.appliedDiscount === "HAPPY_HOUR"
+                      ? item.item.happyHourPriceUSD
+                      : order.appliedDiscount === "STAFF"
+                      ? item.item.staffPriceUSD
+                      : item.item.priceUSD;
+                  const amount = Number(itemPrice);
+                  const formattedPrice = new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                  }).format(amount);
+                  const formattedSubTotal = new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: "USD",
+                  }).format(amount * item.quantity);
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <Link
+                          className="underline"
+                          href={`/orders/${order.id}`}
+                        >
+                          {item.item.descForInvoice}{" "}
+                          {order.appliedDiscount !== "NONE"
+                            ? order.appliedDiscount + " discount"
+                            : ""}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        {dayjs(order.createdAt).format("DD MMM YY")}
+                      </TableCell>
 
-                    <TableCell>{item.quantity}</TableCell>
-                    <TableCell className="text-right">
-                      {formattedPrice}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formattedSubTotal}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {KHRConversionRate?.rates.KHR &&
-                        formatCurrency({
-                          amount:
-                            amount *
-                            item.quantity *
-                            KHRConversionRate?.rates.KHR,
-                          currency: "KHR",
-                        })}
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-          )}
+                      <TableCell>{item.quantity}</TableCell>
+                      <TableCell className="text-right">
+                        {formattedPrice}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formattedSubTotal}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {KHRConversionRate?.rates.KHR &&
+                          formatCurrency({
+                            amount:
+                              amount *
+                              item.quantity *
+                              KHRConversionRate?.rates.KHR,
+                            currency: "KHR",
+                          })}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+            )}
+        {orders &&
+          orders
+            .filter((order) => order.isManualOrder === true)
+            .map((order) => {
+              const formattedSubTotal = formatCurrency({
+                amount: Number(order.subTotalUSD),
+                currency: "USD",
+              });
+              return (
+                <TableRow key={order.id}>
+                  <TableCell>
+                    <Link className="underline" href={`/orders/${order.id}`}>
+                      {order.note}{" "}
+                      {order.appliedDiscount !== "NONE"
+                        ? order.appliedDiscount + " discount"
+                        : ""}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    {dayjs(order.createdAt).format("DD MMM YY")}
+                  </TableCell>
+
+                  <TableCell>-</TableCell>
+                  <TableCell className="text-right">-</TableCell>
+                  <TableCell className="text-right">
+                    {formattedSubTotal}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {KHRConversionRate?.rates.KHR &&
+                      formatCurrency({
+                        amount:
+                          Number(order.subTotalUSD) *
+                          KHRConversionRate?.rates.KHR,
+                        currency: "KHR",
+                      })}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
       </TableBody>
     </Table>
   );

@@ -133,6 +133,14 @@ export const addItemInputSchema = z.object({
     .optional(),
 });
 
+export const createManualOrderInputSchema = z.object({
+  customerName: z.string(),
+  note: z.string(),
+  subTotalUSD: z.number().positive(),
+  guestId: z.string(),
+  invoiceId: z.string(),
+});
+
 // Define the input schema using Zod
 const createOrderInputSchema = z
   .object({
@@ -525,6 +533,22 @@ export const posRouter = createTRPCRouter({
         updateItemStockLevels(ctx.prisma, itemsToUpdate),
       ]);
 
+      return order;
+    }),
+
+  createManualOrder: privateProcedure
+    .input(createManualOrderInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const order = await ctx.xprisma.order.create({
+        data: {
+          subTotalUSD: input.subTotalUSD,
+          invoice: { connect: { id: input.invoiceId } },
+          guest: { connect: { id: input.guestId } },
+          note: input.note,
+          isManualOrder: true,
+          name: input.customerName,
+        },
+      });
       return order;
     }),
 

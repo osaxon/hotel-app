@@ -1,12 +1,6 @@
 import { PaymentStatus, Prisma } from "@prisma/client";
 import dayjs from "dayjs";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
 import { formatCurrency } from "@/lib/utils";
 import { api } from "@/utils/api";
@@ -122,7 +116,6 @@ export function InvoiceDetailsCard({
           </p>
         </div>
       </CardContent>
-      <CardFooter></CardFooter>
     </Card>
   );
 }

@@ -187,6 +187,8 @@ model Order {
     invoiceId       String?
     invoice         Invoice?        @relation(fields: [invoiceId], references: [id])
     items           ItemOrders[]
+    note            String?
+    isManualOrder   Boolean         @default(false)
     status          OrderStatus?    @default(UNPAID)
     reservationId   String?
     reservation     Reservation?    @relation(fields: [reservationId], references: [id])
