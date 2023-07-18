@@ -45,7 +45,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Item, PaymentStatus, Prisma } from "@prisma/client";
 import dayjs from "dayjs";
 import advancedFormat from "dayjs/plugin/advancedFormat";
-import { CheckCheck, PlusSquare, Printer, Receipt } from "lucide-react";
+import { PlusSquare, Printer, Receipt } from "lucide-react";
 import type { GetServerSideProps, NextPage } from "next";
 import { useRouter } from "next/router";
 import { useState } from "react";
@@ -129,6 +129,8 @@ const InvoicePage: NextPage = () => {
               </Button>
               {invoice.status !== "PAID" && (
                 <>
+                  <AddItemsDialog invoice={invoice} />
+
                   <Button
                     className="flex items-center gap-x-1 text-sm print:hidden"
                     variant="ghost"
@@ -138,21 +140,8 @@ const InvoicePage: NextPage = () => {
                     }
                   >
                     <Receipt className="h-4" />
-                    {isUpdatingStatus ? (
-                      <LoadingSpinner size={36} />
-                    ) : (
-                      "Mark as Paid"
-                    )}
+                    {isUpdatingStatus ? <LoadingSpinner size={36} /> : "Settle"}
                   </Button>
-                  <Button
-                    className="flex items-center gap-x-1 text-sm print:hidden"
-                    variant="ghost"
-                    size="sm"
-                  >
-                    <CheckCheck className="h-4" />
-                    Check out
-                  </Button>
-                  <AddItemsDialog invoice={invoice} />
                 </>
               )}
               <CancelInvoiceDialog
@@ -285,7 +274,7 @@ function AddItemsDialog({
     <Dialog>
       <DialogTrigger asChild>
         <Button size="sm" className="text-sm" variant="ghost">
-          <PlusSquare className="h-4" /> Add Items{" "}
+          <PlusSquare className="h-4" /> Add{" "}
         </Button>
       </DialogTrigger>
       <DialogContent className="top-5 sm:max-w-[425px]">
@@ -461,7 +450,9 @@ function CancelInvoiceDialog({
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="outline">Cancel</Button>
+        <Button size="sm" variant="outline">
+          Cancel
+        </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
