@@ -116,7 +116,7 @@ export const invoiceRouter = createTRPCRouter({
         invoiceNumber = parseInt(latestInvoice.invoiceNumber, 10) + 1;
       } else {
         // Use the starting number if no invoice exists
-        invoiceNumber = 2000;
+        invoiceNumber = 1220;
       }
 
       if (!input.guestId) {
