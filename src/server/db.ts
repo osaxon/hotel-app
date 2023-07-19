@@ -105,20 +105,21 @@ export const xprisma = prisma.$extends({
       update: async ({ model, operation, args, query }) => {
         const { data } = args;
         const { status } = data;
-        const updatedInvoice = await query(args);
+        let updatedInvoice;
 
-        if (updatedInvoice && status) {
-          const previousInvoice = await prisma.invoice.findUnique({
-            where: { id: args.where.id },
-            select: { status: true, id: true },
-          });
+        if (status === "CANCELLED") {
+          const newNumber = await generateCancelledInvoiceNumber();
+          console.log(newNumber);
 
-          if (previousInvoice && previousInvoice.status !== status) {
-            // Payment status has been changed, update the invoice
-            const { id } = previousInvoice;
-            if (id) {
-              await updateInvoiceTotal(id);
-            }
+          updatedInvoice = await query(args);
+
+          if (updatedInvoice) {
+            updatedInvoice = await prisma.invoice.update({
+              where: { id: updatedInvoice.id },
+              data: {
+                invoiceNumber: newNumber,
+              },
+            });
           }
         }
 
@@ -257,5 +258,26 @@ const updateInvoiceTotal = async (invoiceId: string) => {
     },
   });
 };
+
+async function generateCancelledInvoiceNumber(): Promise<string> {
+  let newInvoiceNumber;
+
+  const latestCancelled = await prisma.invoice.findFirst({
+    where: { status: "CANCELLED" },
+    orderBy: { invoiceNumber: "desc" },
+  });
+  console.log(latestCancelled);
+  if (latestCancelled) {
+    // Increment the latest invoice number by 1
+    newInvoiceNumber = parseInt(latestCancelled.invoiceNumber, 10) + 1;
+  } else {
+    // Use the starting number if no invoice exists
+    newInvoiceNumber = 9000;
+  }
+  // Logic to generate the new invoice number when an invoice is cancelled
+  console.info("Invoice cancelled - changing invoice number");
+  console.log(newInvoiceNumber);
+  return newInvoiceNumber.toString().padStart(6, "0");
+}
 
 if (env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

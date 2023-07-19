@@ -104,9 +104,12 @@ export const invoiceRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       // Find the latest invoice number from the database
       const latestInvoice = await ctx.prisma.invoice.findFirst({
+        where: { status: { not: "CANCELLED" } },
         orderBy: { invoiceNumber: "desc" },
         select: { invoiceNumber: true },
       });
+
+      console.log(latestInvoice?.invoiceNumber);
 
       let invoiceNumber: number;
       let guest: Guest | undefined = undefined;

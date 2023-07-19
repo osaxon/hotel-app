@@ -417,41 +417,49 @@ function CancelInvoiceDialog({
   invoiceId: string;
 }) {
   const utils = api.useContext();
+  const router = useRouter();
   const { mutate: updateStatus, isLoading: isUpdatingStatus } =
     api.invoice.updateStatus.useMutation({
-      async onMutate({ id, status }) {
-        // Cancel outgoing fetches
-        // TODO move invoice queries to invoice router
-        await utils.pos.getInvoiceByNumber.cancel({ invoiceNumber });
+      onMutate: async () =>
+        await utils.pos.getInvoiceByNumber.invalidate({ invoiceNumber }),
+      onSuccess: (data) => {
+        const { invoiceNumber } = data;
 
-        // Snapshot current state
-
-        const prevData = utils.pos.getInvoiceByNumber.getData({
-          invoiceNumber,
-        });
-
-        // Optimistically update
-
-        utils.pos.getInvoiceByNumber.setData({ invoiceNumber }, (prev) => {
-          if (!prev) return prevData;
-          return {
-            ...prev,
-            status: status,
-          };
-        });
-
-        // return snapshot
-        return { prevData };
+        void router.replace(`/invoices/${invoiceNumber}`);
       },
-      async onSettled() {
-        await utils.pos.getInvoiceByNumber.invalidate({ invoiceNumber });
-      },
+      //   async onMutate({ id, status }) {
+      // // Cancel outgoing fetche
+      //TODO OPTIMISTIC UPDATE OPTION - COMMENTED OUT AS INVOICE CANCELLATION BREAKS THE PROCESS
+      // // TODO move invoice queries to invoice router
+      // await utils.pos.getInvoiceByNumber.cancel({ invoiceNumber });
+
+      // // Snapshot current state
+      // const prevData = utils.pos.getInvoiceByNumber.getData({
+      //   invoiceNumber,
+      // });
+
+      // // Optimistically update
+
+      // utils.pos.getInvoiceByNumber.setData({ invoiceNumber }, (prev) => {
+      //   if (!prev) return prevData;
+      //   return {
+      //     ...prev,
+      //     status: status,
+      //   };
+      // });
+
+      // // return snapshot
+      // return { prevData };
+      //   },
+      //   async onSettled() {
+      //     await utils.pos.getInvoiceByNumber.invalidate({ invoiceNumber });
+      //   },
     });
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button size="sm" variant="outline">
-          Cancel
+          {isUpdatingStatus ? <LoadingSpinner size={24} /> : "Cancel"}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>

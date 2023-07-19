@@ -32,8 +32,8 @@ export function isHappyHour(): boolean {
 }
 
 export function getDurationOfStay(checkIn: Date, checkOut: Date) {
-  const startDate = dayjs(checkIn);
-  const endDate = dayjs(checkOut);
+  const startDate = dayjs(checkIn).startOf("day");
+  const endDate = dayjs(checkOut).endOf("day");
   return endDate.diff(startDate, "day");
 }
 

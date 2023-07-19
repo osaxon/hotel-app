@@ -116,8 +116,15 @@ export default function InvoiceSummary({
                 <TableCell>
                   {dayjs(reservation.createdAt).format("DD MMM YY")}
                 </TableCell>
-                <TableCell>{duration} nights</TableCell>
-                <TableCell className="text-center">-</TableCell>
+                <TableCell>
+                  {JSON.stringify(duration)}{" "}
+                  {duration <= 1 ? "night" : "nights"}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency({
+                    amount: Number(reservation.subTotalUSD) / duration,
+                  })}
+                </TableCell>
                 <TableCell className="text-right">
                   {formattedReservationTotal}
                 </TableCell>
