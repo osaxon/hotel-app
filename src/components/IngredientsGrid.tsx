@@ -33,7 +33,7 @@ export default function IngredientsGrid({
 
   return (
     <div className="relative">
-      <section className="flex max-h-[33vh] flex-col gap-4 overflow-y-scroll">
+      <section className="flex max-h-[33vh] flex-col gap-4 overflow-y-scroll pb-6">
         <div>
           <h2 className="text-xl font-bold tracking-tight">Ingredients</h2>
         </div>

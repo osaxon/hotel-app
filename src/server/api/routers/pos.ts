@@ -133,6 +133,13 @@ export const addItemInputSchema = z.object({
     .optional(),
 });
 
+const addIngredientInputSchema = z.object({
+  name: z.string(),
+  itemId: z.string(),
+  quantityUnit: z.string(),
+  quantity: z.number().refine((value) => !isNaN(value)),
+});
+
 export const createManualOrderInputSchema = z.object({
   customerName: z.string(),
   note: z.string(),
@@ -305,6 +312,17 @@ export const posRouter = createTRPCRouter({
 
         return item;
       }
+    }),
+
+  addIngredient: privateProcedure
+    .input(addIngredientInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const ingredient = await ctx.prisma.itemIngredient.create({
+        data: {
+          ...input,
+        },
+      });
+      return ingredient;
     }),
 
   deactivateItem: privateProcedure

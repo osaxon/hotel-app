@@ -196,7 +196,7 @@ export default function NewItemForm() {
             control={form.control}
             name="priceUSD"
             render={({ field }) => (
-              <FormItem className="w-1/3">
+              <FormItem className="w-full md:w-2/3">
                 <FormLabel>Price USD</FormLabel>
                 <FormControl>
                   <Input type="number" {...field} />
@@ -209,7 +209,7 @@ export default function NewItemForm() {
             control={form.control}
             name="happyHourPriceUSD"
             render={({ field }) => (
-              <FormItem className="w-1/3">
+              <FormItem className="w-full md:w-2/3">
                 <FormLabel>Happy Hour Price USD</FormLabel>
                 <FormControl>
                   <Input type="number" {...field} />
@@ -222,7 +222,7 @@ export default function NewItemForm() {
             control={form.control}
             name="staffPriceUSD"
             render={({ field }) => (
-              <FormItem className="w-1/3">
+              <FormItem className="w-full md:w-2/3">
                 <FormLabel>Staff Price USD</FormLabel>
                 <FormControl>
                   <Input type="number" {...field} />
