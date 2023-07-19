@@ -30,7 +30,7 @@ const FormSchema = z.object({
   name: z.string(),
   itemId: z.string(),
   quantity: z
-    .union([z.string().nullable(), z.number().nullable()])
+    .union([z.string().nullable(), z.number().min(0.005).nullable()])
     .refine((value) => value !== null && !isNaN(parseFloat(value as string)), {
       message: "Must be a valid number.",
       path: ["quantity"],
@@ -66,15 +66,32 @@ export default function NewIngredientForm() {
     }
   );
 
+  const { mutate: addIngredient } = api.pos.addIngredient.useMutation({
+    onSuccess: (data) => {
+      toast({
+        title: "Ingredient created",
+        description: `${data.name as string} created.`,
+      });
+    },
+    onError: (data) => {
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: `${data.shape?.message as string}`,
+      });
+    },
+  });
+
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    toast({
-      title: "The data:",
-      description: (
-        <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
+    addIngredient(data);
+    // toast({
+    //   title: "The data:",
+    //   description: (
+    //     <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
+    //       <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+    //     </pre>
+    //   ),
+    // });
   }
 
   if (isLoadingItems)

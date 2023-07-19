@@ -319,9 +319,22 @@ export const posRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const ingredient = await ctx.prisma.itemIngredient.create({
         data: {
-          ...input,
+          name: input.name,
+          quantity: input.quantity,
+          quantityUnit: input.quantityUnit,
+          ingredient: {
+            connect: {
+              id: input.itemId,
+            },
+          },
         },
       });
+      if (!ingredient) {
+        throw new TRPCError({
+          message: "Error creating the ingredient.",
+          code: "UNPROCESSABLE_CONTENT",
+        });
+      }
       return ingredient;
     }),
 

@@ -46,6 +46,19 @@ export const guestsRouter = createTRPCRouter({
       return guest;
     }),
 
+  searchByEmail: privateProcedure
+    .input(z.object({ email: z.string().email() }))
+    .query(async ({ ctx, input }) => {
+      const guest = await ctx.prisma.guest.findUnique({
+        where: {
+          email: input.email,
+        },
+        select: { id: true, email: true, firstName: true, surname: true },
+      });
+
+      return guest;
+    }),
+
   update: privateProcedure
     .input(
       z.object({

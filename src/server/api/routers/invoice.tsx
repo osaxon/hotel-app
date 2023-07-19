@@ -123,15 +123,23 @@ export const invoiceRouter = createTRPCRouter({
       }
 
       if (!input.guestId) {
-        guest = await ctx.prisma.guest.create({
-          data: {
-            firstName: input.firstName,
-            surname: input.surname,
-            fullName: input.firstName + " " + input.surname,
-            email: input.email,
-          },
-        });
-        if (!guest) {
+        try {
+          guest = await ctx.prisma.guest.create({
+            data: {
+              firstName: input.firstName,
+              surname: input.surname,
+              fullName: input.firstName + " " + input.surname,
+              email: input.email,
+            },
+          });
+        } catch (error) {
+          if ((error as { code: string }).code === "P2002") {
+            throw new TRPCError({
+              message:
+                "A Guest account with this Email already exists. Please choose the existing guest and try again.",
+              code: "CONFLICT",
+            });
+          }
           throw new TRPCError({
             message: "Failed to create the guest.",
             code: "UNPROCESSABLE_CONTENT",
@@ -168,7 +176,7 @@ export const invoiceRouter = createTRPCRouter({
       // Format the invoice number with leading zeros
       const formattedInvoiceNumber = invoiceNumber.toString().padStart(6, "0");
 
-      const invoice = await ctx.prisma.invoice.create({
+      const invoice = await ctx.xprisma.invoice.create({
         data: {
           invoiceNumber: formattedInvoiceNumber,
           reservations: {
@@ -184,37 +192,6 @@ export const invoiceRouter = createTRPCRouter({
         },
       });
 
-      const aggregatedReservations = await ctx.prisma.reservation.aggregate({
-        where: {
-          invoiceId: invoice.id,
-        },
-        _sum: {
-          subTotalUSD: true,
-        },
-      });
-
-      const aggregatedOutstandingReservations =
-        await ctx.prisma.reservation.aggregate({
-          where: {
-            invoiceId: invoice.id,
-            paymentStatus: "UNPAID",
-          },
-          _sum: {
-            subTotalUSD: true,
-          },
-        });
-
-      const invoiceWithTotal = await ctx.prisma.invoice.update({
-        where: {
-          id: invoice.id,
-        },
-        data: {
-          totalUSD: aggregatedReservations._sum.subTotalUSD,
-          remainingBalanceUSD:
-            aggregatedOutstandingReservations._sum.subTotalUSD,
-        },
-      });
-
-      return invoiceWithTotal;
+      return invoice;
     }),
 });

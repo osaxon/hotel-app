@@ -120,6 +120,13 @@ export default function NewInvoiceForm() {
           ),
         });
       },
+      onError: (data) => {
+        toast({
+          title: "Error",
+          variant: "destructive",
+          description: `${data.shape?.message as string}`,
+        });
+      },
     });
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -145,14 +152,6 @@ export default function NewInvoiceForm() {
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
     addInvoice(data);
-    // toast({
-    //   title: "The data:",
-    //   description: (
-    //     <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-    //       <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-    //     </pre>
-    //   ),
-    // });
   }
 
   if (isLoadingGuests || isLoadingGuests || isLoadingResItems)
@@ -210,7 +209,7 @@ export default function NewInvoiceForm() {
                               variant="outline"
                               role="combobox"
                               className={cn(
-                                "w-[200px] justify-between",
+                                "w-[260px] justify-between",
                                 !field.value && "text-muted-foreground"
                               )}
                             >
@@ -223,24 +222,28 @@ export default function NewInvoiceForm() {
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[200px] p-0">
+                        <PopoverContent className="w-[260px] p-0">
                           <Command>
                             <CommandInput placeholder="Search guest..." />
                             <CommandEmpty>No guest found.</CommandEmpty>
-                            <CommandGroup>
+                            <CommandGroup className="max-h-56 overflow-y-scroll">
                               {guests.map((guest) => {
                                 const fullName = `${guest.firstName} ${guest.surname}`;
                                 return (
                                   <CommandItem
                                     value={guest.id}
                                     key={guest.id}
+                                    className="flex flex-col items-start justify-start"
                                     onSelect={(value) => {
                                       form.setValue("guestId", value);
                                       setSelectedGuest(value);
                                       setRunGuestQuery(true);
                                     }}
                                   >
-                                    {guest.fullName}
+                                    <span>{guest.fullName}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {guest.email}
+                                    </span>
                                   </CommandItem>
                                 );
                               })}

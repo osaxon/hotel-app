@@ -76,16 +76,19 @@ export default function NewItemForm() {
   );
 
   const { mutate: addItem, status } = api.pos.addItem.useMutation({
-    onSuccess: () => form.reset(),
-    onError: (error) =>
+    onSuccess: (data) => {
       toast({
-        title: "The error:",
-        description: (
-          <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-            <code className="text-white">{JSON.stringify(error, null, 2)}</code>
-          </pre>
-        ),
-      }),
+        title: "Item created",
+        description: `${data?.name as string} created.`,
+      });
+    },
+    onError: (data) => {
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: `${data.shape?.message as string}`,
+      });
+    },
   });
 
   const {
