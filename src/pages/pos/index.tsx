@@ -62,7 +62,7 @@ const FormSchema = z.object({
 export default function OrdersPage() {
   const [selectedItems, setSelectedItems] = useState<ItemWithQuantity[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<SelectedCustomer>();
-  const [category, setCategory] = useState<SelectedCat>();
+  const [category, setCategory] = useState<SelectedCat>("NONE");
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
   });
@@ -154,12 +154,12 @@ export default function OrdersPage() {
             <h2 className="text-3xl font-bold tracking-tight">Orders</h2>
           </div>
 
-          <Tabs defaultValue="items" className="space-y-4">
+          <Tabs defaultValue="new" className="space-y-4">
             <TabsList>
-              <TabsTrigger value="items">Items</TabsTrigger>
-              <TabsTrigger value="open-tabs">Open Tabs</TabsTrigger>
+              <TabsTrigger value="new">Items</TabsTrigger>
+              <TabsTrigger value="invoices">Invoices</TabsTrigger>
             </TabsList>
-            <TabsContent value="items" className="space-y-4">
+            <TabsContent value="new" className="space-y-4">
               {/* ITEM SELECTION GRID */}
 
               <section className="space-y-4">
@@ -419,7 +419,7 @@ export default function OrdersPage() {
               </section>
             </TabsContent>
 
-            <TabsContent value="open-tabs" className="space-y-4">
+            <TabsContent value="invoices" className="space-y-4">
               <OpenInvoicesTable />
             </TabsContent>
           </Tabs>
