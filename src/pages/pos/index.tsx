@@ -1,12 +1,8 @@
-import { buildClerkProps, getAuth } from "@clerk/nextjs/server";
-import { type GetServerSideProps } from "next";
-import { useState } from "react";
-
 import AdminLayout from "@/components/LayoutAdmin";
 import { OpenInvoicesTable } from "@/components/OpenInvoicesTable";
-import LoadingSpinner, { LoadingPage } from "@/components/loading";
+import { LoadingPage } from "@/components/loading";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -25,12 +21,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn, convertToNormalCase, isHappyHour } from "@/lib/utils";
+import {
+  cn,
+  convertToNormalCase,
+  formatCurrency,
+  isHappyHour,
+} from "@/lib/utils";
 import { type ItemWithQuantity } from "@/server/api/routers/pos";
 import { generateSSGHelper } from "@/server/helpers/ssgHelper";
 import { api } from "@/utils/api";
+import { buildClerkProps, getAuth } from "@clerk/nextjs/server";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { type Item } from "@prisma/client";
+import { ItemCategory, type Item } from "@prisma/client";
+import { PartyPopper, Trash } from "lucide-react";
+import { type GetServerSideProps } from "next";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -44,6 +49,8 @@ type SelectedCustomer = {
   reservationId: string | null;
 };
 
+type SelectedCat = ItemCategory | "NONE";
+
 const FormSchema = z.object({
   room: z.string().optional(),
   name: z.string().optional(),
@@ -55,6 +62,7 @@ const FormSchema = z.object({
 export default function OrdersPage() {
   const [selectedItems, setSelectedItems] = useState<ItemWithQuantity[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<SelectedCustomer>();
+  const [category, setCategory] = useState<SelectedCat>();
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
   });
@@ -110,6 +118,20 @@ export default function OrdersPage() {
     }
   }
 
+  function handleSelectedCat(cat: SelectedCat) {
+    if (cat === category) {
+      setCategory("NONE");
+    } else {
+      setCategory(cat);
+    }
+  }
+
+  function handleRemoveItem(item: Item) {
+    setSelectedItems(
+      selectedItems.filter((selectedItem) => item.id !== selectedItem.id)
+    );
+  }
+
   function onSubmit(data: z.infer<typeof FormSchema>) {
     const orderPayload = {
       ...data,
@@ -127,7 +149,7 @@ export default function OrdersPage() {
       {isAddingOrder ? (
         <LoadingPage />
       ) : (
-        <main className="flex-1 space-y-4 p-8 pt-6">
+        <main className="w-full flex-1 space-y-4 p-8 pt-6 md:w-2/3">
           <div className="flex items-center justify-between space-y-2">
             <h2 className="text-3xl font-bold tracking-tight">Orders</h2>
           </div>
@@ -138,70 +160,97 @@ export default function OrdersPage() {
               <TabsTrigger value="open-tabs">Open Tabs</TabsTrigger>
             </TabsList>
             <TabsContent value="items" className="space-y-4">
-              <div className="flex items-center justify-between space-y-2">
-                <h3 className="text-2xl font-bold tracking-tight">
-                  Select Items
-                </h3>
-              </div>
-
               {/* ITEM SELECTION GRID */}
-              {isLoadingItems ? (
-                <LoadingSpinner size={64} />
-              ) : (
-                items && (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    {items.map((item) => {
-                      const selectedItem = selectedItems.find(
-                        (selectedItem) => selectedItem.id === item.id
-                      );
-                      return (
-                        <Card
-                          className="cursor-pointer"
-                          onClick={() => handleAdd(item)}
-                          key={item.id}
-                        >
-                          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="flex flex-col">
-                              <span className="text-2xl">{item.name}</span>
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="flex flex-col gap-y-4">
-                            <span className="text-sm font-medium text-muted-foreground">
-                              {convertToNormalCase(item.category)}
-                            </span>
-                            <span className="flex select-none items-center gap-2 text-sm font-medium text-muted-foreground">
-                              Qty: {selectedItem ? selectedItem.quantity : 0}
-                            </span>
-                            <div className="flex gap-2">
-                              <span
-                                className={cn(
-                                  "flex select-none items-center gap-2 text-sm font-medium text-muted-foreground",
-                                  isHappyHour() === true &&
-                                    item.happyHourPriceUSD &&
-                                    "italic text-red-500 line-through"
-                                )}
+
+              <section className="space-y-4">
+                <div className="flex items-center justify-between space-y-2">
+                  <h3 className="text-2xl font-bold tracking-tight">
+                    Select Items
+                  </h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {Object.values(ItemCategory)
+                    .filter((cat) => cat !== "INGREDIENT")
+                    .map((cat) => (
+                      <Button
+                        onClick={() => handleSelectedCat(cat)}
+                        size="sm"
+                        variant="secondary"
+                        key={cat}
+                        className={cn(
+                          cat === category && "ring-2 ring-primary "
+                        )}
+                      >
+                        {convertToNormalCase(cat)}
+                      </Button>
+                    ))}
+                </div>
+                <div className="grid grid-cols-3 gap-2 md:grid-cols-5">
+                  {items &&
+                    items
+                      ?.filter((item) =>
+                        category === "NONE"
+                          ? item.category !== null && item.displayOnPOS === true
+                          : item.category === category
+                      )
+                      .map((item) => {
+                        const selectedItem = selectedItems.find(
+                          (selectedItem) => item.id === selectedItem.id
+                        );
+                        return (
+                          <Card key={item.id}>
+                            <CardHeader className="p-3">
+                              <Button
+                                onClick={() => handleAdd(item)}
+                                variant="secondary"
+                                size="lg"
+                                key={item.id}
                               >
-                                $ {item.priceUSD.toNumber()}
-                              </span>
-                              {isHappyHour() === true &&
-                                item.happyHourPriceUSD && (
-                                  <div className="flex items-center gap-2">
-                                    <span className="flex select-none items-center gap-2 text-sm font-medium text-muted-foreground">
-                                      $ {item.happyHourPriceUSD?.toNumber()}
-                                    </span>
-                                    <span className="text-sm text-muted-foreground">
-                                      *Happy Hour*
-                                    </span>
-                                  </div>
+                                {item.name}
+                              </Button>
+                            </CardHeader>
+                            <CardContent className="flex flex-col gap-2 space-y-4 p-3">
+                              <div className="flex items-center justify-between">
+                                {!isHappyHour() && (
+                                  <p className="text-muted-foreground">
+                                    {formatCurrency({
+                                      amount: Number(item.priceUSD),
+                                      currency: "USD",
+                                    })}
+                                  </p>
                                 )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )
-              )}
+                                {isHappyHour() &&
+                                  item.happyHourPriceUSD !== null && (
+                                    <>
+                                      <p className="text-muted-foreground">
+                                        {formatCurrency({
+                                          amount: Number(
+                                            item.happyHourPriceUSD
+                                          ),
+                                          currency: "USD",
+                                        })}
+                                      </p>
+                                      <PartyPopper className="text-green-600" />
+                                    </>
+                                  )}
+                              </div>
+
+                              <div className="relative flex w-full items-center justify-between">
+                                <p className="text-muted-foreground">
+                                  x{selectedItem?.quantity ?? 0}
+                                </p>
+                                <Trash
+                                  onClick={() => handleRemoveItem(item)}
+                                  className="z-99 cursor-pointer text-muted-foreground"
+                                  size={22}
+                                />
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                </div>
+              </section>
 
               <section className="flex-1 space-y-4 pt-6">
                 <div className="flex items-center justify-between space-y-2">

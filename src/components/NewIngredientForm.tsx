@@ -13,6 +13,7 @@ import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { api } from "@/utils/api";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ItemIngredient } from "@prisma/client";
 import { ChevronsUpDown } from "lucide-react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -67,7 +68,7 @@ export default function NewIngredientForm() {
   );
 
   const { mutate: addIngredient } = api.pos.addIngredient.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: ItemIngredient) => {
       toast({
         title: "Ingredient created",
         description: `${data.name as string} created.`,
