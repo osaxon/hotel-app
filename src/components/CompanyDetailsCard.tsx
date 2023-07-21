@@ -14,9 +14,11 @@ export function CompanyDetailsCard() {
         <CardTitle>{appConfig.title}</CardTitle>
         <CardDescription>{appConfig.companyName}</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col items-center justify-center md:flex-row">
+      <CardContent className="grid w-full grid-cols-1 md:w-2/3 md:grid-cols-2">
         <p>{appConfig.vatLabel}</p>
         <p>{appConfig.vatNumber}</p>
+        <p>{appConfig.addressLabel}</p>
+        <p>{appConfig.address}</p>
       </CardContent>
     </Card>
   );

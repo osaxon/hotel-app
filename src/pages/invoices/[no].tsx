@@ -165,7 +165,7 @@ const InvoicePage: NextPage = () => {
         </div>
         <div>{invoice && <InvoiceSummary invoice={invoice} />}</div>
 
-        <div className="flex items-center gap-8">
+        <div className="hidden items-center gap-8 print:flex">
           <div className="flex items-center">
             <p className="p-4 font-bold">Sign</p>
             <p className="w-[240px] rounded-md border p-4"></p>
