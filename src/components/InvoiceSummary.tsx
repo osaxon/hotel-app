@@ -74,7 +74,6 @@ export default function InvoiceSummary({
       <TableHeader>
         <TableRow>
           <TableHead>Desc</TableHead>
-          <TableHead>Date</TableHead>
           <TableHead>Qty</TableHead>
           <TableHead className="text-right">Unit Price</TableHead>
           <TableHead className="text-right">Sub-Total USD</TableHead>
@@ -112,9 +111,6 @@ export default function InvoiceSummary({
                   >
                     {reservation.reservationItem?.descForInvoice}
                   </Link>
-                </TableCell>
-                <TableCell>
-                  {dayjs(reservation.createdAt).format("DD MMM YY")}
                 </TableCell>
                 <TableCell>
                   {JSON.stringify(duration)}{" "}
@@ -171,9 +167,6 @@ export default function InvoiceSummary({
                             ? order.appliedDiscount + " discount"
                             : ""}
                         </Link>
-                      </TableCell>
-                      <TableCell>
-                        {dayjs(order.createdAt).format("DD MMM YY")}
                       </TableCell>
 
                       <TableCell>{item.quantity}</TableCell>
