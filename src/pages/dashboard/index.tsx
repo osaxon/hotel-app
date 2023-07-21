@@ -1,5 +1,6 @@
 import CurrentGuestsCard from "@/components/CurrentGuestsCard";
 import AdminLayout from "@/components/LayoutAdmin";
+import { RecentSales } from "@/components/RecentSales";
 import { SalesChart } from "@/components/SalesChart";
 import UpcomingReservationsCard from "@/components/UpcomingReservationsCard";
 import {
@@ -71,9 +72,7 @@ export default function DashboardPage() {
           <Tabs defaultValue={"menu"} className="space-y-4">
             <TabsList>
               <TabsTrigger value="menu">Menu</TabsTrigger>
-              <TabsTrigger disabled={true} value="dashboard">
-                Dashboard
-              </TabsTrigger>
+              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             </TabsList>
 
             {/* Overview tab */}
@@ -96,7 +95,9 @@ export default function DashboardPage() {
                     <CardTitle>Bar Orders</CardTitle>
                     <CardDescription>Last 24 hours.</CardDescription>
                   </CardHeader>
-                  <CardContent>{/* <RecentSales /> */}</CardContent>
+                  <CardContent>
+                    <RecentSales />
+                  </CardContent>
                 </Card>
               </div>
             </TabsContent>

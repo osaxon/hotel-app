@@ -202,9 +202,10 @@ export const posRouter = createTRPCRouter({
     const oneWeekAgo = dayjs().startOf("day").subtract(6, "day");
 
     const salesData = await ctx.prisma.order.groupBy({
-      by: ["createdAt"],
+      by: ["createdDate"],
       _sum: {
         subTotalUSD: true,
+        totalCostUSD: true,
       },
       _count: {
         id: true,
@@ -220,9 +221,10 @@ export const posRouter = createTRPCRouter({
     console.log(salesData);
 
     const formattedSalesData = salesData.map((data) => ({
-      date: dayjs(data.createdAt).format("DD MMM"),
+      date: dayjs(data.createdDate).format("DD MMM"),
       totalOrders: data._count.id ?? 0,
       subTotal: Number(data._sum.subTotalUSD) ?? 0,
+      totalCost: Number(data._sum.totalCostUSD) ?? 0,
     }));
 
     console.log(formattedSalesData);

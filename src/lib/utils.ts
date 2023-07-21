@@ -27,7 +27,7 @@ function isTimeBetween(startTime: Dayjs, endTime: Dayjs): boolean {
 
 export function isHappyHour(): boolean {
   const startTime = dayjs().set("hour", 17).set("minute", 0).set("second", 0);
-  const endTime = dayjs().set("hour", 20).set("minute", 0).set("second", 0);
+  const endTime = dayjs().set("hour", 19).set("minute", 0).set("second", 0);
   return isTimeBetween(startTime, endTime);
 }
 

@@ -2,6 +2,7 @@ import { PrismaClient, Reservation } from "@prisma/client";
 import { env } from "@/env.mjs";
 import { TRPCError } from "@trpc/server";
 import { Decimal } from "@prisma/client/runtime/library";
+import dayjs from "dayjs";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -130,7 +131,13 @@ export const xprisma = prisma.$extends({
     },
     order: {
       create: async ({ model, operation, args, query }) => {
-        const order = await prisma.order.create(args);
+        const order = await prisma.order.create({
+          ...args,
+          data: {
+            ...args.data,
+            createdDate: dayjs(new Date()).startOf("day").toDate(),
+          },
+        });
         if (!order) {
           throw new Error("Error creating order");
         }

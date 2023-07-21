@@ -196,6 +196,7 @@ model Order {
     totalCostUSD    Decimal?        @db.Decimal(10, 2)
     happyHour       Boolean         @default(false)
     createdAt       DateTime        @default(now())
+    createdDate     DateTime?
     appliedDiscount AppliedDiscount @default(NONE)
 
     @@index([reservationId])

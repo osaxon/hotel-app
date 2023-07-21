@@ -3,6 +3,7 @@ import { OpenInvoicesTable } from "@/components/OpenInvoicesTable";
 import { LoadingPage } from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -62,6 +63,8 @@ const FormSchema = z.object({
 export default function OrdersPage() {
   const [selectedItems, setSelectedItems] = useState<ItemWithQuantity[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<SelectedCustomer>();
+  const [useHappyHourPrices, setUseHappyHourPrices] = useState<boolean>(false);
+
   const [category, setCategory] = useState<SelectedCat>("NONE");
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -138,7 +141,10 @@ export default function OrdersPage() {
       items: selectedItems,
     };
 
-    createOrder({ ...orderPayload, useHappyHourPrice: isHappyHour() });
+    createOrder({
+      ...orderPayload,
+      useHappyHourPrice: isHappyHour() || useHappyHourPrices,
+    });
   }
 
   if (isLoadingItems || isLoadingGuests || isLoadingInvoices)
@@ -185,6 +191,28 @@ export default function OrdersPage() {
                       </Button>
                     ))}
                 </div>
+                <div className="items-top flex space-x-2">
+                  <Checkbox
+                    defaultChecked={isHappyHour()}
+                    disabled={isHappyHour()}
+                    onCheckedChange={() =>
+                      setUseHappyHourPrices(!useHappyHourPrices)
+                    }
+                    id="happyHour"
+                  />
+                  <div className="grid gap-1.5 leading-none">
+                    <label
+                      htmlFor="happyHour"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Use Happy Hour Prices
+                    </label>
+                    <p className="text-sm text-muted-foreground">
+                      Overrides the automatic Happy Hour price check. Disabled
+                      during Happy Hour 17:00 - 19:00.
+                    </p>
+                  </div>
+                </div>
                 <div className="grid grid-cols-3 gap-2 md:grid-cols-5">
                   {items &&
                     items
@@ -211,7 +239,7 @@ export default function OrdersPage() {
                             </CardHeader>
                             <CardContent className="flex flex-col gap-2 space-y-4 p-3">
                               <div className="flex items-center justify-between">
-                                {!isHappyHour() && (
+                                {!isHappyHour() && !useHappyHourPrices && (
                                   <p className="text-muted-foreground">
                                     {formatCurrency({
                                       amount: Number(item.priceUSD),
@@ -219,20 +247,17 @@ export default function OrdersPage() {
                                     })}
                                   </p>
                                 )}
-                                {isHappyHour() &&
-                                  item.happyHourPriceUSD !== null && (
-                                    <>
-                                      <p className="text-muted-foreground">
-                                        {formatCurrency({
-                                          amount: Number(
-                                            item.happyHourPriceUSD
-                                          ),
-                                          currency: "USD",
-                                        })}
-                                      </p>
-                                      <PartyPopper className="text-green-600" />
-                                    </>
-                                  )}
+                                {(isHappyHour() || useHappyHourPrices) && (
+                                  <>
+                                    <p className="text-muted-foreground">
+                                      {formatCurrency({
+                                        amount: Number(item.happyHourPriceUSD),
+                                        currency: "USD",
+                                      })}
+                                    </p>
+                                    <PartyPopper className="text-green-600" />
+                                  </>
+                                )}
                               </div>
 
                               <div className="relative flex w-full items-center justify-between">
@@ -302,7 +327,7 @@ export default function OrdersPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xl font-bold">
-                            Enter name
+                            Customer name
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -400,16 +425,21 @@ export default function OrdersPage() {
                           </TableCell>
                           <TableCell>x {item.quantity}</TableCell>
                           <TableCell>
-                            $
-                            {isHappyHour() && item.happyHourPriceUSD
-                              ? item.happyHourPriceUSD.toString()
-                              : item.priceUSD.toString()}
+                            {formatCurrency({
+                              amount:
+                                isHappyHour() || useHappyHourPrices
+                                  ? Number(item.happyHourPriceUSD)
+                                  : Number(item.priceUSD),
+                            })}
                           </TableCell>
                           <TableCell className="text-right">
-                            $
-                            {isHappyHour()
-                              ? Number(item.happyHourPriceUSD) * item.quantity
-                              : Number(item.priceUSD) * item.quantity}
+                            {formatCurrency({
+                              amount:
+                                isHappyHour() || useHappyHourPrices
+                                  ? Number(item.happyHourPriceUSD) *
+                                    item.quantity
+                                  : Number(item.priceUSD) * item.quantity,
+                            })}
                           </TableCell>
                         </TableRow>
                       ))}
