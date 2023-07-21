@@ -166,7 +166,8 @@ export default function InvoiceSummary({
                           href={`/orders/${order.id}`}
                         >
                           {item.item.descForInvoice}{" "}
-                          {order.appliedDiscount !== "NONE"
+                          {order.appliedDiscount !== "NONE" &&
+                          item.item.category !== "FOOD"
                             ? order.appliedDiscount + " discount"
                             : ""}
                         </Link>

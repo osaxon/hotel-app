@@ -36,6 +36,7 @@ type ItemIngredient = {
 
 const FormSchema = z.object({
   name: z.string(),
+  descForInvoice: z.string(),
   active: z.boolean(),
   stockManaged: z.boolean(),
   displayOnPOS: z.boolean(),
@@ -78,6 +79,7 @@ export default function ItemForm({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       name: item.name,
+      descForInvoice: item.descForInvoice ?? "",
       priceUSD: Number(item.priceUSD),
       happyHourPriceUSD: Number(item.happyHourPriceUSD),
       staffPriceUSD: Number(item.staffPriceUSD),
@@ -120,6 +122,22 @@ export default function ItemForm({
                 <Input disabled={disabled} {...field} />
               </FormControl>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="descForInvoice"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Invoice label</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+              <FormDescription>
+                This is how the item will appear on on the invoice.
+              </FormDescription>
             </FormItem>
           )}
         />
