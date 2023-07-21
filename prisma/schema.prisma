@@ -193,6 +193,7 @@ model Order {
     reservationId   String?
     reservation     Reservation?    @relation(fields: [reservationId], references: [id])
     subTotalUSD     Decimal         @db.Decimal(10, 2)
+    totalCostUSD    Decimal?        @db.Decimal(10, 2)
     happyHour       Boolean         @default(false)
     createdAt       DateTime        @default(now())
     appliedDiscount AppliedDiscount @default(NONE)

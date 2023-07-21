@@ -102,7 +102,7 @@ export const columns: ColumnDef<
         row.original.reservationItem?.description || "";
 
       return (
-        <Link href={`/res-item/${resItemId}`}>
+        <Link href={`/reservations/res-item/${resItemId}`}>
           <Button>{resItemDesc}</Button>
         </Link>
       );

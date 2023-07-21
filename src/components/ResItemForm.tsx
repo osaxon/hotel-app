@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "@/components/ui/use-toast";
+import { api } from "@/utils/api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   BoardType,
@@ -32,9 +32,9 @@ import { Input } from "./ui/input";
 const FormSchema = z.object({
   description: z.string(),
   descForInvoice: z.string(),
-  roomType: z.string(),
-  roomVariant: z.string(),
-  boardType: z.string(),
+  roomType: z.nativeEnum(RoomType),
+  roomVariant: z.nativeEnum(RoomVariant),
+  boardType: z.nativeEnum(BoardType),
 });
 
 export default function ResItemForm({
@@ -43,29 +43,38 @@ export default function ResItemForm({
   resItem?: ReservationItem;
 }) {
   const [disabled, setDisabled] = useState<boolean>(true);
+  const mode = resItem ? "UPDATE" : "NEW";
+
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       description: resItem && resItem.description,
+      descForInvoice: resItem?.descForInvoice ?? "",
+      roomType: resItem?.roomType,
+      roomVariant: resItem?.roomVariant,
+      boardType: resItem?.boardType,
     },
   });
 
+  const { mutate: update } = api.reservations.updateResItem.useMutation();
+  const { mutate: create } = api.reservations.createResItem.useMutation();
+
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    toast({
-      title: "The data:",
-      description: (
-        <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
+    if (mode === "NEW") {
+      create(data);
+    } else if (mode === "UPDATE" && resItem && resItem.id) {
+      update({
+        id: resItem.id,
+        ...data,
+      });
+    }
   }
 
   return (
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="w-full shrink-0 space-y-6 md:w-1/2"
+        className="w-full shrink-0 space-y-6 md:w-2/3"
       >
         <FormField
           control={form.control}

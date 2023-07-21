@@ -8,7 +8,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-
 import { Input } from "@/components/ui/input";
 import { cn, convertToNormalCase } from "@/lib/utils";
 import { api } from "@/utils/api";
@@ -339,7 +338,7 @@ export default function NewInvoiceForm() {
                     name={`reservations.${index}.checkIn`}
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
-                        <FormLabel>Check In</FormLabel>
+                        <FormLabel>Check-In</FormLabel>
                         <Popover>
                           <PopoverTrigger asChild>
                             <FormControl>
@@ -362,13 +361,10 @@ export default function NewInvoiceForm() {
                           <PopoverContent className="w-auto p-0" align="start">
                             <Calendar
                               mode="single"
-                              selected={field.value}
+                              required
+                              selected={field.value ?? undefined}
                               onSelect={field.onChange}
-                              disabled={(date) =>
-                                date > new Date() ||
-                                date < new Date("1900-01-01")
-                              }
-                              today={new Date()}
+                              initialFocus
                             />
                           </PopoverContent>
                         </Popover>
@@ -405,7 +401,8 @@ export default function NewInvoiceForm() {
                           <PopoverContent className="w-auto p-0" align="start">
                             <Calendar
                               mode="single"
-                              selected={field.value}
+                              required
+                              selected={field.value ?? undefined}
                               onSelect={field.onChange}
                               disabled={(date) =>
                                 date.valueOf() <
@@ -490,21 +487,12 @@ export default function NewInvoiceForm() {
                     email: form.getValues("reservations")[0]?.email ?? "",
                     reservationItemId: "",
                     checkIn:
-                      form.watch("reservations")[0]?.checkIn ?? new Date(),
+                      form.watch("reservations")[0]?.checkIn || new Date(),
                     checkOut:
-                      form.watch("reservations")[0]?.checkOut ?? new Date(),
+                      form.watch("reservations")[0]?.checkOut || new Date(),
                     subTotalUSD: 0,
                     status: ReservationStatus.CONFIRMED,
                   });
-                  if (reservations && reservations.length) {
-                    form.setFocus(
-                      `reservations.${
-                        reservations.length - 1
-                      }.reservationItemId`
-                    );
-                  } else {
-                    form.setFocus(`reservations.0.status`);
-                  }
                 }}
                 variant="secondary"
                 className="flex gap-2"

@@ -18,6 +18,9 @@ import {
   Invoice,
   Guest,
   PaymentStatus,
+  RoomType,
+  RoomVariant,
+  BoardType,
 } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
 
@@ -127,6 +130,49 @@ export const reservationsRouter = createTRPCRouter({
         },
       });
       return updatedReservation;
+    }),
+
+  createResItem: privateProcedure
+    .input(
+      z.object({
+        description: z.string(),
+        descForInvoice: z.string(),
+        roomType: z.nativeEnum(RoomType),
+        roomVariant: z.nativeEnum(RoomVariant),
+        boardType: z.nativeEnum(BoardType),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const resItem = await ctx.prisma.reservationItem.create({
+        data: {
+          ...input,
+        },
+      });
+
+      return resItem;
+    }),
+
+  updateResItem: privateProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        description: z.string(),
+        descForInvoice: z.string(),
+        roomType: z.nativeEnum(RoomType),
+        roomVariant: z.nativeEnum(RoomVariant),
+        boardType: z.nativeEnum(BoardType),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      const resItem = await ctx.prisma.reservationItem.update({
+        where: { id },
+        data: {
+          ...data,
+        },
+      });
+
+      return resItem;
     }),
 
   createReservation: privateProcedure

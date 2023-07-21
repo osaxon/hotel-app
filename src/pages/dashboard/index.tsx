@@ -1,7 +1,6 @@
 import CurrentGuestsCard from "@/components/CurrentGuestsCard";
 import AdminLayout from "@/components/LayoutAdmin";
-import { Overview } from "@/components/Overview";
-import { RecentSales } from "@/components/RecentSales";
+import { SalesChart } from "@/components/SalesChart";
 import UpcomingReservationsCard from "@/components/UpcomingReservationsCard";
 import {
   Card,
@@ -24,13 +23,13 @@ const menuItems = [
   {
     label: "Invoices",
     href: "/invoices",
-    desc: "Manage and create Invoices.",
+    desc: "Manage & create Invoices.",
     icon: Receipt,
   },
   {
-    label: "Rooms & Bookings",
+    label: "Reservations",
     href: "/reservations",
-    desc: "View & create reservations for guests.",
+    desc: "View & edit reservations for guests.",
     icon: BedDouble,
   },
   {
@@ -72,7 +71,9 @@ export default function DashboardPage() {
           <Tabs defaultValue={"menu"} className="space-y-4">
             <TabsList>
               <TabsTrigger value="menu">Menu</TabsTrigger>
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+              <TabsTrigger disabled={true} value="dashboard">
+                Dashboard
+              </TabsTrigger>
             </TabsList>
 
             {/* Overview tab */}
@@ -84,10 +85,10 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="col-span-full lg:col-span-4">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle>Reservations by Month</CardTitle>
+                    <CardTitle>Sales by Week</CardTitle>
                   </CardHeader>
                   <CardContent className="pl-2">
-                    <Overview />
+                    <SalesChart />
                   </CardContent>
                 </Card>
                 <Card className="col-span-full lg:col-span-3">
@@ -95,9 +96,7 @@ export default function DashboardPage() {
                     <CardTitle>Bar Orders</CardTitle>
                     <CardDescription>Last 24 hours.</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <RecentSales />
-                  </CardContent>
+                  <CardContent>{/* <RecentSales /> */}</CardContent>
                 </Card>
               </div>
             </TabsContent>

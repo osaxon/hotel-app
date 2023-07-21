@@ -1,11 +1,12 @@
 import AdminLayout from "@/components/LayoutAdmin";
 import OrderTable from "@/components/OrderTable";
-import LoadingSpinner, { LoadingPage } from "@/components/loading";
+import { LoadingPage } from "@/components/loading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api } from "@/utils/api";
 import dayjs from "dayjs";
 import advancedFormat from "dayjs/plugin/advancedFormat";
+import { Receipt, Trash2 } from "lucide-react";
 import type { NextPage } from "next";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -23,7 +24,34 @@ const SingleOrderPage: NextPage = () => {
   const { data: order, isLoading } = api.pos.getOrderById.useQuery({
     id: orderId,
   });
-  const { mutate: markAsPaid, status } = api.pos.markOrderAsPaid.useMutation();
+  const utils = api.useContext();
+
+  const { mutate: updateStatus, status } = api.pos.updateStatus.useMutation({
+    async onMutate({ id, status }) {
+      // Cancel outgoing fetches
+      await utils.pos.getOrderById.cancel({ id: orderId });
+
+      // Snapshot current state
+      const prevData = utils.pos.getOrderById.getData({
+        id: orderId,
+      });
+
+      // Optimistically update
+      utils.pos.getOrderById.setData({ id: orderId }, (prev) => {
+        if (!prev) return prevData;
+        return {
+          ...prev,
+          status: status,
+        };
+      });
+
+      // return snapshot
+      return { prevData };
+    },
+    async onSettled() {
+      await utils.pos.getOrderById.invalidate({ id: orderId });
+    },
+  });
 
   if (isLoading) return <LoadingPage />;
   if (!order) return <>No data found</>;
@@ -42,12 +70,14 @@ const SingleOrderPage: NextPage = () => {
             <p className="text-lg font-semibold">Name</p>
             <p className="text-lg font-semibold">{order.name}</p>
             <p className="text-lg font-semibold">Invoice Number</p>
+
             <Link
               href={`/invoices/${order.invoice?.invoiceNumber ?? ""}`}
               className="text-lg font-semibold underline"
             >
               IN{order.invoice?.invoiceNumber}
             </Link>
+
             <p className="text-lg font-semibold">Date Created</p>
             <p className="text-lg font-semibold">
               {dayjs(order.createdAt).format("Do MMM YYYY")}
@@ -60,14 +90,31 @@ const SingleOrderPage: NextPage = () => {
               }).format(Number(order.subTotalUSD))}
             </p>
             <p className="text-lg font-semibold">Status</p>
-            <Badge className="inline-flex justify-center">{order.status}</Badge>
+            <Badge
+              variant="outline"
+              className="inline-flex justify-center rounded-md"
+            >
+              {order.status}
+            </Badge>
           </div>
           <div className="my-4 flex gap-4">
             <Button
-              className="flex items-center justify-center"
-              onClick={() => markAsPaid({ id: order.id })}
+              variant="ghost"
+              className="flex items-center justify-center gap-1"
+              onClick={() => updateStatus({ id: order.id, status: "PAID" })}
             >
-              {status === "loading" ? <LoadingSpinner /> : "Mark as Paid"}
+              <Receipt />
+              Mark as Paid
+            </Button>
+            <Button
+              variant="ghost"
+              className="flex items-center justify-center gap-1"
+              onClick={() =>
+                updateStatus({ id: order.id, status: "CANCELLED" })
+              }
+            >
+              <Trash2 />
+              Cancel Order
             </Button>
             {order.guest?.type === "STAFF" && (
               <Button

@@ -135,7 +135,10 @@ export default function InvoiceSummary({
 
         {orders &&
           orders
-            .filter((order) => order.isManualOrder === false)
+            .filter(
+              (order) =>
+                order.isManualOrder === false && order.status === "UNPAID"
+            )
             .map(
               (order, index) =>
                 order.items &&
@@ -195,7 +198,10 @@ export default function InvoiceSummary({
             )}
         {orders &&
           orders
-            .filter((order) => order.isManualOrder === true)
+            .filter(
+              (order) =>
+                order.isManualOrder === true && order.status === "UNPAID"
+            )
             .map((order) => {
               const formattedSubTotal = formatCurrency({
                 amount: Number(order.subTotalUSD),

@@ -164,6 +164,17 @@ const InvoicePage: NextPage = () => {
           <h3 className="font-bold">Items:</h3>
         </div>
         <div>{invoice && <InvoiceSummary invoice={invoice} />}</div>
+
+        <div className="flex items-center gap-8">
+          <div className="flex items-center">
+            <p className="p-4 font-bold">Sign</p>
+            <p className="w-[240px] rounded-md border p-4"></p>
+          </div>
+          <div className="flex items-center">
+            <p className="p-4 font-bold">Date</p>
+            <p className="w-[240px] rounded-md border p-4"></p>
+          </div>
+        </div>
       </section>
     </AdminLayout>
   );
@@ -247,13 +258,14 @@ function AddItemsDialog({
       guestId: invoice.guest?.id,
       items: selectedItems,
       useHappyHourPrice: useHappyHourPrices,
+      name: invoice.customerName ?? "",
     });
   }
 
   function onSubmit(data: z.infer<typeof ManualOrderFormSchema>) {
     const orderPayload = {
       ...data,
-      customerName: invoice.customerName ?? "",
+      name: invoice.customerName ?? "",
       invoiceId: invoice.id ?? "",
       guestId: invoice.guestId ?? "",
     };

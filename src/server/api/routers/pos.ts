@@ -18,6 +18,7 @@ import { type Item } from "@prisma/client";
 import { prisma } from "@/server/db";
 import { AppliedDiscount } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
+import dayjs from "dayjs";
 
 interface ItemToUpdate {
   itemId: string;
@@ -44,11 +45,16 @@ async function calculateItemPriceAndDiscount(
   guestId: string | undefined,
   item: Item,
   happyHourOverride: boolean
-): Promise<{ price: Decimal; discountApplied: AppliedDiscount | null }> {
-  const { priceUSD, happyHourPriceUSD, staffPriceUSD } = item;
+): Promise<{
+  price: Decimal;
+  discountApplied: AppliedDiscount | null;
+  cost: Decimal;
+}> {
+  const { priceUSD, happyHourPriceUSD, staffPriceUSD, totalCostUSD } = item;
 
   let price = priceUSD;
   let discountApplied: AppliedDiscount = AppliedDiscount.NONE;
+  const cost = totalCostUSD ?? new Decimal(0);
 
   console.log(
     `Calculating item price and discount for guest ID ${guestId ?? "None"}`
@@ -88,7 +94,7 @@ async function calculateItemPriceAndDiscount(
           (price = happyHourPriceUSD ?? priceUSD));
     }
   }
-  return { price, discountApplied };
+  return { price, discountApplied, cost };
 }
 
 async function updateItemStockLevels(
@@ -141,7 +147,7 @@ const addIngredientInputSchema = z.object({
 });
 
 export const createManualOrderInputSchema = z.object({
-  customerName: z.string(),
+  name: z.string(),
   note: z.string(),
   subTotalUSD: z.number().positive(),
   guestId: z.string(),
@@ -189,6 +195,39 @@ export const posRouter = createTRPCRouter({
     });
 
     return orders;
+  }),
+
+  getTotalSales: privateProcedure.query(async ({ ctx }) => {
+    const today = dayjs().endOf("day");
+    const oneWeekAgo = dayjs().startOf("day").subtract(6, "day");
+
+    const salesData = await ctx.prisma.order.groupBy({
+      by: ["createdAt"],
+      _sum: {
+        subTotalUSD: true,
+      },
+      _count: {
+        id: true,
+      },
+      where: {
+        createdAt: {
+          gte: oneWeekAgo.toDate(),
+          lt: today.toDate(),
+        },
+      },
+    });
+
+    console.log(salesData);
+
+    const formattedSalesData = salesData.map((data) => ({
+      date: dayjs(data.createdAt).format("DD MMM"),
+      totalOrders: data._count.id ?? 0,
+      subTotal: Number(data._sum.subTotalUSD) ?? 0,
+    }));
+
+    console.log(formattedSalesData);
+
+    return formattedSalesData;
   }),
 
   getOrderById: privateProcedure
@@ -402,7 +441,7 @@ export const posRouter = createTRPCRouter({
             });
           }
 
-          const { price, discountApplied } =
+          const { price, discountApplied, cost } =
             await calculateItemPriceAndDiscount(
               guestId, // Pass the guestId if available
               itemDataItem,
@@ -410,7 +449,8 @@ export const posRouter = createTRPCRouter({
             );
 
           const subTotal = price.times(item.quantity);
-          return { item, price, discountApplied, subTotal };
+          const totalCost = cost.times(item.quantity);
+          return { item, price, discountApplied, subTotal, totalCost };
         })
       );
 
@@ -423,6 +463,11 @@ export const posRouter = createTRPCRouter({
       // Calculate the total subTotal
       const subTotalUSD = calculatedItems.reduce(
         (total, { subTotal }) => total.plus(subTotal),
+        new Decimal(0)
+      );
+
+      const totalCost = calculatedItems.reduce(
+        (total, { totalCost }) => total.plus(totalCost),
         new Decimal(0)
       );
 
@@ -481,6 +526,7 @@ export const posRouter = createTRPCRouter({
         name: name,
         happyHour: isHappyHour(),
         subTotalUSD: subTotalUSD,
+        totalCostUSD: totalCost,
         appliedDiscount: calculatedItems[0]?.discountApplied as AppliedDiscount,
         invoice: {} as { connect?: { id: string } } & {
           create?: {
@@ -577,7 +623,7 @@ export const posRouter = createTRPCRouter({
           guest: { connect: { id: input.guestId } },
           note: input.note,
           isManualOrder: true,
-          name: input.customerName,
+          name: input.name,
         },
       });
       return order;
@@ -705,13 +751,13 @@ export const posRouter = createTRPCRouter({
       return updatedInvoice;
     }),
 
-  markOrderAsPaid: privateProcedure
-    .input(z.object({ id: z.string() }))
+  updateStatus: privateProcedure
+    .input(z.object({ id: z.string(), status: z.nativeEnum(OrderStatus) }))
     .mutation(async ({ ctx, input }) => {
-      const updatedOrder = await ctx.prisma.order.update({
+      const updatedOrder = await ctx.xprisma.order.update({
         where: { id: input.id },
         data: {
-          status: OrderStatus.PAID,
+          status: input.status,
         },
         include: {
           invoice: {
@@ -720,55 +766,6 @@ export const posRouter = createTRPCRouter({
             },
           },
           reservation: { include: { reservationItem: true } },
-        },
-      });
-
-      const invoiceId = updatedOrder.invoiceId;
-
-      if (!updatedOrder.invoice || !invoiceId) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Not found",
-        });
-      }
-
-      const outstandingReservations = await ctx.prisma.reservation.aggregate({
-        where: {
-          invoiceId: invoiceId,
-          paymentStatus: { not: PaymentStatus.PAID },
-        },
-        _sum: { subTotalUSD: true },
-      });
-
-      // Calculate the sum of all outstanding orders for the Invoice
-      const outstandingOrders = await ctx.prisma.order.aggregate({
-        where: {
-          invoiceId: invoiceId,
-          status: { not: OrderStatus.PAID },
-        },
-        _sum: { subTotalUSD: true },
-      });
-
-      let totalUSD = new Decimal(0); // Initialize totalUSD as a Decimal
-
-      if (outstandingOrders._sum.subTotalUSD) {
-        totalUSD = totalUSD.add(
-          new Decimal(outstandingOrders._sum.subTotalUSD)
-        );
-      }
-
-      if (outstandingReservations._sum.subTotalUSD) {
-        // Calculate the Reservation subTotal and add it to the total
-        totalUSD = totalUSD.add(
-          new Decimal(outstandingReservations._sum.subTotalUSD)
-        );
-      }
-
-      // Update the Invoice total
-      const updatedInvoice = await ctx.prisma.invoice.update({
-        where: { id: invoiceId },
-        data: {
-          totalUSD: totalUSD,
         },
       });
 

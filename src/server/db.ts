@@ -1,5 +1,7 @@
 import { PrismaClient, Reservation } from "@prisma/client";
 import { env } from "@/env.mjs";
+import { TRPCError } from "@trpc/server";
+import { Decimal } from "@prisma/client/runtime/library";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -139,6 +141,19 @@ export const xprisma = prisma.$extends({
         }
         return order;
       },
+      update: async ({ model, operation, args, query }) => {
+        const { data } = args;
+        const { status } = data;
+
+        const updatedOrder = await query(args);
+
+        // If status is updated
+        if (status && updatedOrder && updatedOrder.invoiceId) {
+          await updateInvoiceTotal(updatedOrder.invoiceId);
+        }
+
+        return updatedOrder;
+      },
     },
   },
 });
@@ -146,117 +161,92 @@ export const xprisma = prisma.$extends({
 const updateInvoiceTotal = async (invoiceId: string) => {
   console.log("updating invoice total function");
 
-  const aggregatedOutstandingReservations = await prisma.reservation.aggregate({
-    where: {
-      invoiceId: invoiceId,
-      paymentStatus: "UNPAID",
-    },
-    _sum: {
-      subTotalUSD: true,
-    },
-  });
+  try {
+    // Calculate the aggregated totals for unpaid reservations and orders
+    const aggregatedOutstandingReservations =
+      await prisma.reservation.aggregate({
+        where: {
+          invoiceId: invoiceId,
+          paymentStatus: "UNPAID",
+        },
+        _sum: {
+          subTotalUSD: true,
+        },
+      });
 
-  const aggregatedOutstandingOrders = await prisma.order.aggregate({
-    where: {
-      invoiceId: invoiceId,
-      status: "UNPAID",
-    },
-    _sum: {
-      subTotalUSD: true,
-    },
-  });
+    const aggregatedOutstandingOrders = await prisma.order.aggregate({
+      where: {
+        invoiceId: invoiceId,
+        status: "UNPAID",
+      },
+      _sum: {
+        subTotalUSD: true,
+      },
+    });
 
-  const aggregatedReservations = await prisma.reservation.aggregate({
-    where: {
-      invoiceId: invoiceId,
-      paymentStatus: "UNPAID",
-    },
-    _sum: {
-      subTotalUSD: true,
-    },
-  });
+    // Calculate the new total
+    let newBalance = new Decimal(0);
+    let newTotal = new Decimal(0);
 
-  const aggregatedOrders = await prisma.order.aggregate({
-    where: {
-      invoiceId: invoiceId,
-      status: "UNPAID",
-    },
-    _sum: {
-      subTotalUSD: true,
-    },
-  });
-
-  let newTotal;
-
-  // set the invoice total
-  if (
-    !aggregatedOrders._sum.subTotalUSD &&
-    !aggregatedReservations._sum.subTotalUSD
-  ) {
-    throw new Error("failed to aggregate totals");
-  }
-
-  if (
-    aggregatedOrders._sum.subTotalUSD &&
-    aggregatedReservations._sum.subTotalUSD
-  ) {
-    newTotal = aggregatedReservations._sum.subTotalUSD.add(
-      aggregatedOrders._sum.subTotalUSD
-    );
-  } else if (
-    !aggregatedOrders._sum.subTotalUSD &&
-    aggregatedReservations._sum.subTotalUSD
-  ) {
-    newTotal = aggregatedReservations._sum.subTotalUSD;
-  } else if (
-    aggregatedOrders._sum.subTotalUSD &&
-    !aggregatedReservations._sum.subTotalUSD
-  ) {
-    newTotal = aggregatedOrders._sum.subTotalUSD;
-  }
-
-  let newRemainingBalance;
-
-  // set the remaining balance
-  if (
-    !aggregatedOutstandingOrders._sum.subTotalUSD &&
-    !aggregatedOutstandingReservations._sum.subTotalUSD
-  ) {
-    throw new Error("failed to aggregate totals");
-  }
-
-  if (
-    aggregatedOutstandingOrders._sum.subTotalUSD &&
-    aggregatedOutstandingReservations._sum.subTotalUSD
-  ) {
-    newRemainingBalance =
-      aggregatedOutstandingReservations._sum.subTotalUSD.add(
-        aggregatedOutstandingOrders._sum.subTotalUSD
+    if (aggregatedOutstandingReservations._sum?.subTotalUSD) {
+      newBalance = newBalance.add(
+        aggregatedOutstandingReservations._sum.subTotalUSD
       );
-  } else if (
-    !aggregatedOutstandingOrders._sum.subTotalUSD &&
-    aggregatedOutstandingReservations._sum.subTotalUSD
-  ) {
-    newRemainingBalance = aggregatedOutstandingReservations._sum.subTotalUSD;
-  } else if (
-    aggregatedOutstandingOrders._sum.subTotalUSD &&
-    !aggregatedOutstandingReservations._sum.subTotalUSD
-  ) {
-    newRemainingBalance = aggregatedOutstandingOrders._sum.subTotalUSD;
+    }
+
+    if (aggregatedOutstandingOrders._sum?.subTotalUSD) {
+      newBalance = newBalance.add(aggregatedOutstandingOrders._sum.subTotalUSD);
+    }
+
+    console.log("new total:", newBalance);
+
+    // Calculate the total minus any cancelled
+    const aggregatedTotalReservations = await prisma.reservation.aggregate({
+      where: {
+        invoiceId: invoiceId,
+        paymentStatus: { not: "CANCELLED" },
+      },
+      _sum: {
+        subTotalUSD: true,
+      },
+    });
+
+    // Add everything which isn't cancelled
+    const aggregatedTotalOrders = await prisma.order.aggregate({
+      where: {
+        invoiceId: invoiceId,
+        status: { not: "CANCELLED" },
+      },
+      _sum: {
+        subTotalUSD: true,
+      },
+    });
+
+    if (aggregatedTotalReservations._sum?.subTotalUSD) {
+      newTotal = newTotal.add(aggregatedTotalReservations._sum.subTotalUSD);
+    }
+
+    if (aggregatedTotalOrders._sum?.subTotalUSD) {
+      newTotal = newTotal.add(aggregatedTotalOrders._sum.subTotalUSD);
+    }
+
+    console.log("total:", newTotal);
+
+    // Update the invoice with the new total and remaining balance
+    await prisma.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        totalUSD: newTotal,
+        remainingBalanceUSD: newBalance,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating invoice total:", error);
+    throw new TRPCError({
+      message: "Error updating invoice total.",
+      code: "INTERNAL_SERVER_ERROR",
+    });
   }
-
-  console.log("new balance");
-  console.log(newRemainingBalance);
-
-  await prisma.invoice.update({
-    where: {
-      id: invoiceId,
-    },
-    data: {
-      remainingBalanceUSD: newRemainingBalance,
-      totalUSD: newTotal,
-    },
-  });
 };
 
 async function generateCancelledInvoiceNumber(): Promise<string> {

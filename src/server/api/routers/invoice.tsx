@@ -176,22 +176,28 @@ export const invoiceRouter = createTRPCRouter({
       // Format the invoice number with leading zeros
       const formattedInvoiceNumber = invoiceNumber.toString().padStart(6, "0");
 
-      const invoice = await ctx.xprisma.invoice.create({
-        data: {
-          invoiceNumber: formattedInvoiceNumber,
-          reservations: {
-            createMany: {
-              data: reservationData ?? [],
+      try {
+        const invoice = await ctx.xprisma.invoice.create({
+          data: {
+            invoiceNumber: formattedInvoiceNumber,
+            reservations: {
+              createMany: {
+                data: reservationData ?? [],
+              },
+            },
+            customerName: input.firstName + " " + input.surname,
+            customerEmail: input.email,
+            guest: {
+              connect: { id: guest.id },
             },
           },
-          customerName: input.firstName + " " + input.surname,
-          customerEmail: input.email,
-          guest: {
-            connect: { id: guest.id },
-          },
-        },
-      });
-
-      return invoice;
+        });
+        return invoice;
+      } catch (error) {
+        throw new TRPCError({
+          message: JSON.stringify(error),
+          code: "UNPROCESSABLE_CONTENT",
+        });
+      }
     }),
 });

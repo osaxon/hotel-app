@@ -10,13 +10,13 @@ export const columns: ColumnDef<ReservationItem>[] = [
     accessorKey: "id",
     header: () => <div className="">Option ID</div>,
     cell: ({ row }) => {
-      const reservationID: string = row.getValue("id");
+      const resItemId: string = row.getValue("id");
       return (
         <Link
-          href={`/reservations/${reservationID}`}
+          href={`/reservations/res-items/${resItemId}`}
           className="w-10 uppercase underline"
         >
-          ...{reservationID.slice(-8)}
+          ...{resItemId.slice(-8)}
         </Link>
       );
     },

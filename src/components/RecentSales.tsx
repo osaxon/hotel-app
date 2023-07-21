@@ -11,13 +11,13 @@ export function RecentSales() {
   if (!orders) return <>No data</>;
 
   return (
-    <div className="space-y-8">
+    <div className="max-h-[350px] space-y-8 overflow-scroll">
       {orders
         .sort((a, b) => dayjs(b.createdAt).diff(dayjs(a.createdAt)))
         .map((order) => (
           <div key={order.id} className="flex items-center">
             <BeerIcon />
-            <div className="ml-4 space-y-1">
+            <div className="ml-4 space-y-1 overflow-scroll">
               <Link
                 href={`/orders/${order.id}`}
                 className="text-sm font-medium leading-none"

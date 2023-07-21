@@ -73,7 +73,7 @@ export function InvoiceDetailsCard({
               {dayjs(invoice.createdAt).format("Do MMM YYYY")}
             </p>
           </p>
-          <p className="flex items-center gap-x-2 text-lg">
+          {/* <p className="flex items-center gap-x-2 text-lg">
             Total USD:{" "}
             <p className="text-lg">
               {new Intl.NumberFormat("en-us", {
@@ -81,9 +81,9 @@ export function InvoiceDetailsCard({
                 currency: "USD",
               }).format(Number(invoice.totalUSD))}
             </p>
-          </p>
+          </p> */}
           <p className="flex items-center gap-x-2 text-lg">
-            Balance USD:{" "}
+            Total USD:{" "}
             <p className="text-lg">
               {new Intl.NumberFormat("en-us", {
                 style: "currency",
@@ -91,7 +91,7 @@ export function InvoiceDetailsCard({
               }).format(Number(invoice.remainingBalanceUSD))}
             </p>
           </p>
-          <p className="flex items-center gap-x-2 text-lg">
+          {/* <p className="flex items-center gap-x-2 text-lg">
             Total KHR:{" "}
             {KHRRates?.rates.KHR && (
               <p className="text-lg">
@@ -101,9 +101,9 @@ export function InvoiceDetailsCard({
                 })}
               </p>
             )}
-          </p>
+          </p> */}
           <p className="flex items-center gap-x-2 text-lg">
-            Balance KHR:{" "}
+            Total KHR:{" "}
             {KHRRates?.rates.KHR && (
               <p className="text-lg">
                 {formatCurrency({
