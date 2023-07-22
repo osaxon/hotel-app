@@ -163,7 +163,8 @@ export default function InvoiceSummary({
                         >
                           {item.item.descForInvoice}{" "}
                           {order.appliedDiscount !== "NONE" &&
-                          item.item.category !== "FOOD"
+                          item.item.category !== "FOOD" &&
+                          item.item.category !== "SERVICES"
                             ? order.appliedDiscount + " discount"
                             : ""}
                         </Link>
@@ -210,9 +211,6 @@ export default function InvoiceSummary({
                         ? order.appliedDiscount + " discount"
                         : ""}
                     </Link>
-                  </TableCell>
-                  <TableCell>
-                    {dayjs(order.createdAt).format("DD MMM YY")}
                   </TableCell>
 
                   <TableCell>-</TableCell>
