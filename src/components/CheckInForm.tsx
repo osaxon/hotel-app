@@ -90,35 +90,27 @@ export default function CheckInForm({
     onError: (error) => {
       toast({
         title: "The data:",
-        description: (
-          <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-            <code className="text-white">{JSON.stringify(error, null, 2)}</code>
-          </pre>
-        ),
+        variant: "destructive",
+        description: error.message,
       });
     },
     onSuccess: (data) => {
       toast({
-        title: "Guest checked-in",
-        description: (
-          <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-            <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-          </pre>
-        ),
+        description: "Guest checked in",
       });
     },
   });
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
     checkIn({ reservationId: reservationData?.id, ...data });
-    toast({
-      title: "The data:",
-      description: (
-        <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
+    // toast({
+    //   title: "The data:",
+    //   description: (
+    //     <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
+    //       <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+    //     </pre>
+    //   ),
+    // });
   }
 
   if (isLoadingRooms) return <LoadingPage />;

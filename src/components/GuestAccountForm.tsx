@@ -98,12 +98,13 @@ export default function GuestAccountForm({
   const { mutate: updateGuest } = api.guests.update.useMutation({
     onSuccess: (data) => {
       toast({
-        title: "The data:",
-        description: (
-          <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-            <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-          </pre>
-        ),
+        description: "Account updated",
+      });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        description: error.message,
       });
     },
   });

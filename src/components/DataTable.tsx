@@ -10,6 +10,8 @@ import { convertToNormalCase } from "@/lib/utils";
 import {
   flexRender,
   getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
@@ -18,7 +20,10 @@ import {
   type ColumnFiltersState,
   type SortingState,
 } from "@tanstack/react-table";
+import { X } from "lucide-react";
 import { useState } from "react";
+import { DataTableFacetedFilter } from "./DataTableFacetedToolbar";
+import { itemCats } from "./ItemsTable";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
@@ -40,9 +45,15 @@ export default function DataTable<TData, TValue>({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState({});
+
   const table = useReactTable({
     data,
     columns,
+    state: {
+      sorting,
+      columnFilters,
+      rowSelection,
+    },
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
@@ -50,29 +61,53 @@ export default function DataTable<TData, TValue>({
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
     onRowSelectionChange: setRowSelection,
-    state: {
-      sorting,
-      columnFilters,
-      rowSelection,
-    },
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+    debugTable: true,
   });
+  const isFiltered = table.getState().columnFilters.length > 0;
+
+  console.log(table);
 
   return (
-    <div>
+    <div className="space-y-4">
+      {/* TOOLBAR */}
       {displayFilter && (
-        <div className="flex items-center py-4">
-          <Input
-            placeholder={filterPlaceholder}
-            value={
-              (table.getColumn(filterColumn)?.getFilterValue() as string) ?? ""
-            }
-            onChange={(event) =>
-              table.getColumn(filterColumn)?.setFilterValue(event.target.value)
-            }
-            className="max-w-sm"
-          />
+        <div className="flex items-center justify-between">
+          <div className="flex flex-1 items-center space-x-2">
+            <Input
+              placeholder={filterPlaceholder}
+              value={
+                (table.getColumn(filterColumn)?.getFilterValue() as string) ??
+                ""
+              }
+              onChange={(event) =>
+                table
+                  .getColumn(filterColumn)
+                  ?.setFilterValue(event.target.value)
+              }
+              className="max-w-sm"
+            />
+            {table.getColumn("category") && (
+              <DataTableFacetedFilter
+                column={table.getColumn("category")}
+                title="Category"
+                options={itemCats}
+              />
+            )}
+            {isFiltered && (
+              <Button
+                variant="ghost"
+                onClick={() => table.resetColumnFilters()}
+              >
+                Reset
+                <X className="ml-2 h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
       )}
+      {/* TABLE */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>

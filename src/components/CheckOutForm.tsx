@@ -8,7 +8,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { toast } from "@/components/ui/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -58,22 +57,21 @@ export default function CheckOutForm({
   });
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    toast({
-      title: "The data:",
-      description: (
-        <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-          <code className="text-white">
-            {JSON.stringify({ ...data }, null, 2)}
-          </code>
-        </pre>
-      ),
-    });
+    // toast({
+    //   title: "The data:",
+    //   description: (
+    //     <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
+    //       <code className="text-white">
+    //         {JSON.stringify({ ...data }, null, 2)}
+    //       </code>
+    //     </pre>
+    //   ),
+    // });
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="w-full space-y-6">
-        {JSON.stringify(aggregate)}
         <FormField
           control={form.control}
           name="roomNumber"
@@ -95,7 +93,7 @@ export default function CheckOutForm({
           name="checkIn"
           render={({ field }) => (
             <FormItem className="flex flex-col">
-              <FormLabel>Check In</FormLabel>
+              <FormLabel>Check Out</FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
                   <FormControl>

@@ -16,16 +16,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "@/components/ui/use-toast";
 import { convertToNormalCase } from "@/lib/utils";
+import { api } from "@/utils/api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ItemCategory, Prisma } from "@prisma/client";
-import { AlertTriangle, Pencil } from "lucide-react";
-import { useState } from "react";
+import { AlertTriangle, PlusCircle } from "lucide-react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Checkbox } from "./ui/checkbox";
-import { Toggle } from "./ui/toggle";
+import { toast } from "./ui/use-toast";
 
 type ItemIngredient = {
   id: string;
@@ -41,29 +41,34 @@ const FormSchema = z.object({
   stockManaged: z.boolean(),
   displayOnPOS: z.boolean(),
   mixedItem: z.boolean().default(false),
+  quantityInStock: z
+    .union([z.string().nullable(), z.number().nullable()])
+    .refine((value) => value !== null && !isNaN(parseFloat(value as string)), {
+      message: "Must be a valid number.",
+      path: ["quantityInStock"],
+    })
+    .transform((value) => parseFloat(value as string)),
   priceUSD: z
-    .string()
-    .refine((value) => !isNaN(parseFloat(value)), {
-      message: "Price must be a valid number",
+    .union([z.string().nullable(), z.number().nullable()])
+    .refine((value) => value !== null && !isNaN(parseFloat(value as string)), {
+      message: "Must be a valid number.",
       path: ["priceUSD"],
     })
-    .transform((value) => parseFloat(value)),
+    .transform((value) => parseFloat(value as string)),
   happyHourPriceUSD: z
-    .string()
-    .refine((value) => !isNaN(parseFloat(value)), {
-      message: "Price must be a valid number",
+    .union([z.string().nullable(), z.number().nullable()])
+    .refine((value) => value !== null && !isNaN(parseFloat(value as string)), {
+      message: "Must be a valid number.",
       path: ["happyHourPriceUSD"],
     })
-    .transform((value) => parseFloat(value))
-    .optional(),
+    .transform((value) => parseFloat(value as string)),
   staffPriceUSD: z
-    .string()
-    .refine((value) => !isNaN(parseFloat(value)), {
-      message: "Price must be a valid number",
+    .union([z.string().nullable(), z.number().nullable()])
+    .refine((value) => value !== null && !isNaN(parseFloat(value as string)), {
+      message: "Must be a valid number.",
       path: ["staffPriceUSD"],
     })
-    .transform((value) => parseFloat(value))
-    .optional(),
+    .transform((value) => parseFloat(value as string)),
   category: z.nativeEnum(ItemCategory),
 });
 
@@ -74,7 +79,6 @@ export default function ItemForm({
     include: { ingredients: { include: { ingredient: true } } };
   }>;
 }) {
-  const [disabled, setDisabled] = useState<boolean>(true);
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -83,6 +87,7 @@ export default function ItemForm({
       priceUSD: Number(item.priceUSD),
       happyHourPriceUSD: Number(item.happyHourPriceUSD),
       staffPriceUSD: Number(item.staffPriceUSD),
+      quantityInStock: Number(item.quantityInStock),
       category: item.category,
       active: item.active,
       stockManaged: item.stockManaged,
@@ -90,28 +95,38 @@ export default function ItemForm({
     },
   });
 
+  const { mutate: updateItem } = api.pos.updateItem.useMutation({
+    onSuccess: (data) => {
+      toast({
+        description: "Item updated",
+      });
+    },
+  });
+
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    toast({
-      title: "The data:",
-      description: (
-        <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
+    updateItem({ id: item.id, ...data });
   }
+
+  useEffect(() => {
+    if (item.quantityInStock !== null) {
+      form.setValue("quantityInStock", Number(item.quantityInStock));
+    }
+    if (item.priceUSD !== null) {
+      form.setValue("priceUSD", Number(item.priceUSD));
+    }
+    if (item.happyHourPriceUSD !== null) {
+      form.setValue("happyHourPriceUSD", Number(item.happyHourPriceUSD));
+    }
+    if (item.staffPriceUSD !== null) {
+      form.setValue("staffPriceUSD", Number(item.staffPriceUSD));
+    }
+  }, [form, item]);
+
+  const qtyInStock = form.watch("quantityInStock");
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="w-2/3 space-y-6">
-        <div className="flex justify-end ">
-          <Toggle aria-label="Toggle edit">
-            <Pencil
-              className="h-8 w-8"
-              onClick={() => setDisabled(!disabled)}
-            />
-          </Toggle>
-        </div>
         <FormField
           control={form.control}
           name="name"
@@ -119,7 +134,7 @@ export default function ItemForm({
             <FormItem>
               <FormLabel>Item Name</FormLabel>
               <FormControl>
-                <Input disabled={disabled} {...field} />
+                <Input {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -150,7 +165,7 @@ export default function ItemForm({
               <FormItem className="md:w-1/3">
                 <FormLabel>Price USD</FormLabel>
                 <FormControl>
-                  <Input disabled={disabled} type="number" {...field} />
+                  <Input type="number" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -163,7 +178,7 @@ export default function ItemForm({
               <FormItem className="md:w-1/3">
                 <FormLabel>Happy Hour Price USD</FormLabel>
                 <FormControl>
-                  <Input disabled={disabled} type="number" {...field} />
+                  <Input type="number" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -176,7 +191,7 @@ export default function ItemForm({
               <FormItem className="md:w-1/3">
                 <FormLabel>Staff Price Price USD</FormLabel>
                 <FormControl>
-                  <Input disabled={disabled} type="number" {...field} />
+                  <Input type="number" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -190,11 +205,7 @@ export default function ItemForm({
           render={({ field }) => (
             <FormItem className="w-1/3">
               <FormLabel>Category</FormLabel>
-              <Select
-                disabled={disabled}
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-              >
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a category" />
@@ -212,6 +223,42 @@ export default function ItemForm({
             </FormItem>
           )}
         />
+        <div className="flex items-end gap-3">
+          <FormField
+            control={form.control}
+            name="quantityInStock"
+            render={({ field }) => (
+              <FormItem className="md:w-1/3">
+                <FormLabel>In Stock</FormLabel>
+                <FormControl>
+                  <Input type="number" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="flex gap-1"
+              onClick={() => form.setValue("quantityInStock", qtyInStock + 1)}
+            >
+              <PlusCircle className="h-4 w-4" />
+              Add 1
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="flex gap-1"
+              onClick={() => form.setValue("quantityInStock", qtyInStock + 10)}
+            >
+              <PlusCircle className="h-4 w-4" />
+              Add 10
+            </Button>
+          </div>
+        </div>
+
         <div>
           <div>
             <h3 className="my-4 text-lg font-bold">Item Options</h3>
@@ -225,14 +272,13 @@ export default function ItemForm({
                   <FormControl>
                     <Checkbox
                       checked={field.value}
-                      disabled={true}
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
                     <FormLabel>Active</FormLabel>
                     <FormDescription>
-                      If an item is no longer required you can deactivate below.
+                      Inactive items won&apos;t appear on the POS menu.
                     </FormDescription>
                   </div>
                 </FormItem>
@@ -246,7 +292,7 @@ export default function ItemForm({
                   <FormControl>
                     <Checkbox
                       checked={field.value}
-                      disabled={disabled || item.ingredients.length > 0}
+                      disabled={item.ingredients.length > 0}
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
@@ -272,7 +318,6 @@ export default function ItemForm({
                 <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4">
                   <FormControl>
                     <Checkbox
-                      disabled={disabled}
                       checked={field.value}
                       onCheckedChange={field.onChange}
                     />
@@ -306,12 +351,7 @@ export default function ItemForm({
         )}
 
         <div className="flex gap-4">
-          <Button disabled={disabled} type="submit">
-            Save
-          </Button>
-          <Button disabled={disabled} variant="destructive" type="submit">
-            Deactivate
-          </Button>
+          <Button type="submit">Save</Button>
         </div>
       </form>
     </Form>

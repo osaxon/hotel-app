@@ -119,6 +119,15 @@ async function updateItemStockLevels(
   }
 }
 
+const updateItemInputSchema = z.object({
+  id: z.string(),
+  priceUSD: z.number().refine((value) => !isNaN(value)),
+  happyHourPriceUSD: z.number().refine((value) => !isNaN(value)),
+  staffPriceUSD: z.number().refine((value) => !isNaN(value)),
+  quantityInStock: z.number().refine((value) => !isNaN(value)),
+  category: z.nativeEnum(ItemCategory),
+});
+
 export const addItemInputSchema = z.object({
   name: z.string(),
   priceUSD: z.number().positive(),
@@ -353,6 +362,18 @@ export const posRouter = createTRPCRouter({
 
         return item;
       }
+    }),
+
+  updateItem: privateProcedure
+    .input(updateItemInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const updatedItem = await ctx.prisma.item.update({
+        where: { id: input.id },
+        data: {
+          ...input,
+        },
+      });
+      return updatedItem;
     }),
 
   addIngredient: privateProcedure

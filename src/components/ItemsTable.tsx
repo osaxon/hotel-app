@@ -1,10 +1,18 @@
-import { convertToNormalCase, formatCurrency } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { api } from "@/utils/api";
-import { type Item } from "@prisma/client";
+import { ItemCategory, type Item } from "@prisma/client";
 import { type ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import DataTable from "./DataTable";
 import { LoadingPage } from "./loading";
+
+export const itemCats = Object.values(ItemCategory).map((cat) => {
+  return {
+    label: cat,
+    value: cat.toString(),
+    icon: undefined,
+  };
+});
 
 export const columnsWithQty: ColumnDef<Item>[] = [
   {
@@ -25,11 +33,24 @@ export const columnsWithQty: ColumnDef<Item>[] = [
     header: "Name",
   },
   {
+    id: "category",
     accessorKey: "category",
     header: "Category",
-    cell: ({ row }) => (
-      <div>{convertToNormalCase(row.getValue("category"))}</div>
-    ),
+    cell: ({ row }) => {
+      const cat = itemCats.find(
+        (cat) => cat.value === row.getValue("category")
+      );
+
+      if (!cat) {
+        return null;
+      }
+
+      return <div className="flex items-center">{cat.label}</div>;
+    },
+    filterFn: (row, id, value) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      return value.includes(row.getValue(id));
+    },
   },
   {
     accessorKey: "quantityUnit",
@@ -66,11 +87,24 @@ export const columnsWithPrice: ColumnDef<Item>[] = [
     header: "Name",
   },
   {
+    id: "category",
     accessorKey: "category",
     header: "Category",
-    cell: ({ row }) => (
-      <div>{convertToNormalCase(row.getValue("category"))}</div>
-    ),
+    cell: ({ row }) => {
+      const cat = itemCats.find(
+        (cat) => cat.value === row.getValue("category")
+      );
+
+      if (!cat) {
+        return null;
+      }
+
+      return <div className="flex items-center">{cat.label}</div>;
+    },
+    filterFn: (row, id, value) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      return value.includes(row.getValue(id));
+    },
   },
   {
     accessorKey: "priceUSD",
@@ -101,11 +135,24 @@ export const columnsNoQty: ColumnDef<Item>[] = [
     header: "Name",
   },
   {
+    id: "category",
     accessorKey: "category",
     header: "Category",
-    cell: ({ row }) => (
-      <div>{convertToNormalCase(row.getValue("category"))}</div>
-    ),
+    cell: ({ row }) => {
+      const cat = itemCats.find(
+        (cat) => cat.value === row.getValue("category")
+      );
+
+      if (!cat) {
+        return null;
+      }
+
+      return <div className="flex items-center">{cat.label}</div>;
+    },
+    filterFn: (row, id, value) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      return value.includes(row.getValue(id));
+    },
   },
 ];
 
@@ -124,10 +171,6 @@ export function ItemsTable({
 
   if (isLoading) return <LoadingPage />;
   if (!items) return null;
-
-  const inventoryItems = items.filter(
-    (item) => item.ingredients.length < 1 && item.category !== "FOOD"
-  );
 
   return (
     <DataTable
