@@ -1,5 +1,10 @@
 import { createTRPCRouter, privateProcedure } from "@/server/api/trpc";
-import { Guest, PaymentStatus, ReservationStatus } from "@prisma/client";
+import {
+  Guest,
+  InvoiceType,
+  PaymentStatus,
+  ReservationStatus,
+} from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -9,6 +14,7 @@ export const newInvoiceInputSchema = z.object({
   firstName: z.string(),
   surname: z.string(),
   email: z.string(),
+  type: z.nativeEnum(InvoiceType).default("HOTEL"),
   reservations: z
     .array(
       z.object({
@@ -102,25 +108,46 @@ export const invoiceRouter = createTRPCRouter({
   create: privateProcedure
     .input(newInvoiceInputSchema)
     .mutation(async ({ ctx, input }) => {
-      // Find the latest invoice number from the database
-      const latestInvoice = await ctx.prisma.invoice.findFirst({
-        where: { status: { not: "CANCELLED" } },
-        orderBy: { invoiceNumber: "desc" },
-        select: { invoiceNumber: true },
-      });
+      //   let latestInvoice;
 
-      console.log(latestInvoice?.invoiceNumber);
+      //   if (input.type === "HOTEL") {
+      //     // Find the latest invoice number from the database
+      //     latestInvoice = await ctx.prisma.invoice.findFirst({
+      //       where: { status: { not: "CANCELLED" }, type: "HOTEL" },
+      //       orderBy: { invoiceNumber: "desc" },
+      //       select: { invoiceNumber: true },
+      //     });
+      //   } else if (input.type === "BAR") {
+      //     latestInvoice = await ctx.prisma.invoice.findFirst({
+      //       where: {
+      //         status: { not: "CANCELLED" },
+      //         type: "BAR",
+      //       },
+      //       orderBy: { invoiceNumber: "desc" },
+      //       select: { invoiceNumber: true },
+      //     });
+      //   }
 
-      let invoiceNumber: number;
+      //   let invoiceNumber: number;
+      //   let formattedInvoiceNumber = "";
+
+      //   if (latestInvoice) {
+      //     // Increment the latest invoice number by 1
+      //     invoiceNumber = parseInt(latestInvoice.invoiceNumber, 10) + 1;
+      //   } else {
+      //     // Use the starting number if no invoice exists
+      //     if (input.type === "HOTEL") {
+      //       invoiceNumber = 1220;
+      //       // Format the invoice number with leading zeros
+      //       formattedInvoiceNumber = invoiceNumber.toString().padStart(6, "0");
+      //     } else if (input.type === "BAR") {
+      //       invoiceNumber = 5000;
+      //       // Format the invoice number with leading zeros
+      //       formattedInvoiceNumber = invoiceNumber.toString().padStart(6, "0");
+      //     }
+      //   }
+
       let guest: Guest | undefined = undefined;
-
-      if (latestInvoice) {
-        // Increment the latest invoice number by 1
-        invoiceNumber = parseInt(latestInvoice.invoiceNumber, 10) + 1;
-      } else {
-        // Use the starting number if no invoice exists
-        invoiceNumber = 1220;
-      }
 
       if (!input.guestId) {
         try {
@@ -172,14 +199,10 @@ export const invoiceRouter = createTRPCRouter({
         guestId: guest?.id,
       }));
 
-      console.log(reservationData);
-      // Format the invoice number with leading zeros
-      const formattedInvoiceNumber = invoiceNumber.toString().padStart(6, "0");
-
       try {
         const invoice = await ctx.xprisma.invoice.create({
           data: {
-            invoiceNumber: formattedInvoiceNumber,
+            type: input.type,
             reservations: {
               createMany: {
                 data: reservationData ?? [],

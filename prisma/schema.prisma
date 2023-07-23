@@ -95,7 +95,7 @@ model Reservation {
 
 model Invoice {
     id                  String        @id @default(cuid())
-    invoiceNumber       String        @unique
+    invoiceNumber       String?       @unique
     lineItems           InvoiceItem[]
     createdAt           DateTime      @default(now())
     totalUSD            Decimal?      @db.Decimal(10, 2)
@@ -111,6 +111,7 @@ model Invoice {
     status        PaymentStatus  @default(UNPAID)
     paymentMethod PaymentMethod?
     orders        Order[]
+    type          InvoiceType    @default(HOTEL)
 
     @@index([guestId])
 }
@@ -299,4 +300,9 @@ enum AppliedDiscount {
     STAFF
     CREDITS
     NONE
+}
+
+enum InvoiceType {
+    HOTEL
+    BAR
 }

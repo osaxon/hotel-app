@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { cn, convertToNormalCase } from "@/lib/utils";
 import { api } from "@/utils/api";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ReservationStatus } from "@prisma/client";
+import { InvoiceType, ReservationStatus } from "@prisma/client";
 import { format } from "date-fns";
 import {
   CalendarIcon,
@@ -52,6 +52,7 @@ const FormSchema = z.object({
   firstName: z.string(),
   surname: z.string(),
   email: z.string(),
+  type: z.nativeEnum(InvoiceType).default("HOTEL"),
   reservations: z.array(
     z.object({
       // Define the properties of each object in the array
@@ -111,10 +112,10 @@ export default function NewInvoiceForm() {
       onSuccess: (data) => {
         toast({
           title: `Invoice created.`,
-          description: `IN${data.invoiceNumber}.`,
+          description: `IN${data.invoiceNumber!}.`,
           action: (
             <ToastAction altText="go to invoice">
-              <Link href={`/invoices/${data.invoiceNumber}`}>View</Link>
+              <Link href={`/invoices/${data.invoiceNumber!}`}>View</Link>
             </ToastAction>
           ),
         });
@@ -149,7 +150,17 @@ export default function NewInvoiceForm() {
     name: "reservations", // unique name for your Field Array
   });
 
+  const type = form.watch("type");
+
   function onSubmit(data: z.infer<typeof FormSchema>) {
+    // toast({
+    //   title: "The data:",
+    //   description: (
+    //     <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
+    //       <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+    //     </pre>
+    //   ),
+    // });
     addInvoice(data);
   }
 
@@ -290,6 +301,37 @@ export default function NewInvoiceForm() {
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Invoice Type</FormLabel>
+                    <Select
+                      defaultValue={InvoiceType.HOTEL}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.values(InvoiceType).map((type) => (
+                          <SelectItem
+                            className="uppercase"
+                            key={type}
+                            value={type}
+                          >
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -479,6 +521,7 @@ export default function NewInvoiceForm() {
                 </div>
               ))}
               <Button
+                disabled={type === "BAR"}
                 onClick={() => {
                   appendReservation({
                     firstName:

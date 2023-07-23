@@ -97,14 +97,73 @@ export const xprisma = prisma.$extends({
     },
     invoice: {
       create: async ({ model, operation, args, query }) => {
-        const invoice = await prisma.invoice.create(args);
-
-        if (!invoice) {
-          throw new Error("Error creating invoice");
+        const { data } = args;
+        if (!data) {
+          throw new Error("No data");
         }
-        await updateInvoiceTotal(invoice.id);
-        return invoice;
+        const { type } = data;
+        let latestInvoice;
+
+        if (type === "HOTEL") {
+          // Find the latest invoice number from the database
+          latestInvoice = await prisma.invoice.findFirst({
+            where: { status: { not: "CANCELLED" }, type: "HOTEL" },
+            orderBy: { invoiceNumber: "desc" },
+            select: { invoiceNumber: true },
+          });
+        } else if (type === "BAR") {
+          latestInvoice = await prisma.invoice.findFirst({
+            where: {
+              status: { not: "CANCELLED" },
+              type: "BAR",
+            },
+            orderBy: { invoiceNumber: "desc" },
+            select: { invoiceNumber: true },
+          });
+        }
+
+        let invoiceNumber = 0;
+
+        if (latestInvoice) {
+          // Increment the latest invoice number by 1
+          console.log(latestInvoice);
+          invoiceNumber = parseInt(latestInvoice.invoiceNumber!, 10) + 1;
+        } else {
+          // Use the starting number if no invoice exists
+          if (type === "HOTEL") {
+            invoiceNumber = 1220;
+          } else if (type === "BAR") {
+            invoiceNumber = 500000;
+          }
+        }
+
+        const formattedInvoiceNumber = invoiceNumber
+          .toString()
+          .padStart(6, "0");
+
+        console.log(formattedInvoiceNumber);
+
+        try {
+          const newInvoice = await prisma.invoice.create({
+            ...args,
+            data: {
+              invoiceNumber: formattedInvoiceNumber,
+              ...args.data,
+            },
+          });
+
+          if (!newInvoice) {
+            throw new Error("Error creating invoice");
+          }
+
+          await updateInvoiceTotal(newInvoice.id);
+
+          return newInvoice;
+        } catch (error) {
+          throw new Error(JSON.stringify(error));
+        }
       },
+
       update: async ({ model, operation, args, query }) => {
         const { data } = args;
         const { status } = data;
@@ -266,10 +325,10 @@ async function generateCancelledInvoiceNumber(): Promise<string> {
   console.log(latestCancelled);
   if (latestCancelled) {
     // Increment the latest invoice number by 1
-    newInvoiceNumber = parseInt(latestCancelled.invoiceNumber, 10) + 1;
+    newInvoiceNumber = parseInt(latestCancelled.invoiceNumber!, 10) + 1;
   } else {
     // Use the starting number if no invoice exists
-    newInvoiceNumber = 9000;
+    newInvoiceNumber = 900000;
   }
   // Logic to generate the new invoice number when an invoice is cancelled
   console.info("Invoice cancelled - changing invoice number");
