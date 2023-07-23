@@ -77,9 +77,11 @@ export default function NewItemForm() {
 
   const { mutate: addItem, status } = api.pos.addItem.useMutation({
     onSuccess: (data) => {
+      form.reset();
+      const name = data.name;
       toast({
         title: "Item created",
-        description: `${data?.name as string} created.`,
+        description: `${name} created.`,
       });
     },
     onError: (data) => {
@@ -115,17 +117,6 @@ export default function NewItemForm() {
     };
 
     addItem(parsedData);
-
-    toast({
-      title: "The data:",
-      description: (
-        <pre className="mt-2 w-full rounded-md bg-slate-950 p-4">
-          <code className="text-white">
-            {JSON.stringify(parsedData, null, 2)}
-          </code>
-        </pre>
-      ),
-    });
   }
 
   if (status === "loading") return <LoadingPage />;

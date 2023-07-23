@@ -131,6 +131,7 @@ const updateItemInputSchema = z.object({
 
 export const addItemInputSchema = z.object({
   name: z.string(),
+  descForInvoice: z.string(),
   priceUSD: z.number().positive(),
   happyHourPriceUSD: z.number().positive().optional(),
   category: z.nativeEnum(ItemCategory),
@@ -360,9 +361,8 @@ export const posRouter = createTRPCRouter({
             },
           },
         });
-
-        return item;
       }
+      return item;
     }),
 
   updateItem: privateProcedure
