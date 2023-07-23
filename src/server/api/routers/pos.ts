@@ -10,6 +10,7 @@ import {
   PaymentStatus,
   Reservation,
   type PrismaClient,
+  InvoiceType,
 } from "@prisma/client";
 import { isHappyHour } from "@/lib/utils";
 import { Decimal } from "@prisma/client/runtime/library";
@@ -554,6 +555,7 @@ export const posRouter = createTRPCRouter({
         invoice: {} as { connect?: { id: string } } & {
           create?: {
             customerName: string;
+            type: InvoiceType;
             invoiceNumber: string;
             totalUSD: Decimal;
           };
@@ -587,6 +589,7 @@ export const posRouter = createTRPCRouter({
       } else {
         orderData.invoice.create = {
           customerName: name ?? "",
+          type: "BAR",
           invoiceNumber: await generateInvoiceNumber(),
           totalUSD: subTotalUSD,
         };
@@ -598,6 +601,7 @@ export const posRouter = createTRPCRouter({
         } else {
           orderData.invoice.create = {
             customerName: name ?? "",
+            type: "BAR",
             invoiceNumber: await generateInvoiceNumber(),
             totalUSD: subTotalUSD,
           };
