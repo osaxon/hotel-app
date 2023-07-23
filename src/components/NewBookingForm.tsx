@@ -126,7 +126,11 @@ export default function NewBookingForm() {
                 <p>Reservation added</p>
               </div>
             ),
-            action: <Link href={`/check-in/${data.id}`}>Check-In</Link>,
+            action: (
+              <Link href={`/invoices/${data.invoiceId as string}`}>
+                View Invoice
+              </Link>
+            ),
           });
       },
     });
