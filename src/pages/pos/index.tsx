@@ -289,7 +289,12 @@ export default function OrdersPage() {
                       <div
                         onClick={() => {
                           form.setValue("invoiceId", invoice.id);
-                          form.setValue("name", invoice.guest?.fullName ?? "");
+                          form.setValue(
+                            "name",
+                            invoice.guest?.fullName ??
+                              invoice.customerName ??
+                              ""
+                          );
                           form.setValue("guestId", invoice.guest?.id ?? "");
                         }}
                         key={invoice.id}
@@ -349,7 +354,7 @@ export default function OrdersPage() {
                     />
 
                     {/* HIDDEN FROM UI BUT VALUES ARE NEEDED TO SEND TO API */}
-                    <div className="hidden">
+                    <div className="">
                       <FormField
                         control={form.control}
                         name="invoiceId"

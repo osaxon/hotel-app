@@ -1,4 +1,4 @@
-import { PrismaClient, Reservation } from "@prisma/client";
+import { InvoiceType, PrismaClient, Reservation } from "@prisma/client";
 import { env } from "@/env.mjs";
 import { TRPCError } from "@trpc/server";
 import { Decimal } from "@prisma/client/runtime/library";
@@ -102,52 +102,59 @@ export const xprisma = prisma.$extends({
           throw new Error("No data");
         }
         const { type } = data;
-        let latestInvoice;
+        // let latestInvoice;
 
-        if (type === "HOTEL") {
-          // Find the latest invoice number from the database
-          latestInvoice = await prisma.invoice.findFirst({
-            where: { status: { not: "CANCELLED" }, type: "HOTEL" },
-            orderBy: { invoiceNumber: "desc" },
-            select: { invoiceNumber: true },
-          });
-        } else if (type === "BAR") {
-          latestInvoice = await prisma.invoice.findFirst({
-            where: {
-              status: { not: "CANCELLED" },
-              type: "BAR",
-            },
-            orderBy: { invoiceNumber: "desc" },
-            select: { invoiceNumber: true },
-          });
+        // if (type === "HOTEL") {
+        //   // Find the latest invoice number from the database
+        //   latestInvoice = await prisma.invoice.findFirst({
+        //     where: { status: { not: "CANCELLED" }, type: "HOTEL" },
+        //     orderBy: { invoiceNumber: "desc" },
+        //     select: { invoiceNumber: true },
+        //   });
+        // } else if (type === "BAR") {
+        //   latestInvoice = await prisma.invoice.findFirst({
+        //     where: {
+        //       status: { not: "CANCELLED" },
+        //       type: "BAR",
+        //     },
+        //     orderBy: { invoiceNumber: "desc" },
+        //     select: { invoiceNumber: true },
+        //   });
+        // }
+
+        // let invoiceNumber = 0;
+
+        // if (latestInvoice) {
+        //   // Increment the latest invoice number by 1
+        //   console.log(latestInvoice);
+        //   invoiceNumber = parseInt(latestInvoice.invoiceNumber!, 10) + 1;
+        // } else {
+        //   // Use the starting number if no invoice exists
+        //   if (type === "HOTEL") {
+        //     invoiceNumber = 1220;
+        //   } else if (type === "BAR") {
+        //     invoiceNumber = 500000;
+        //   }
+        // }
+
+        // const formattedInvoiceNumber = invoiceNumber
+        //   .toString()
+        //   .padStart(6, "0");
+
+        // console.log(formattedInvoiceNumber);
+
+        if (!type) {
+          throw new Error(
+            "No type provided, unable to create invoice without type"
+          );
         }
-
-        let invoiceNumber = 0;
-
-        if (latestInvoice) {
-          // Increment the latest invoice number by 1
-          console.log(latestInvoice);
-          invoiceNumber = parseInt(latestInvoice.invoiceNumber!, 10) + 1;
-        } else {
-          // Use the starting number if no invoice exists
-          if (type === "HOTEL") {
-            invoiceNumber = 1220;
-          } else if (type === "BAR") {
-            invoiceNumber = 500000;
-          }
-        }
-
-        const formattedInvoiceNumber = invoiceNumber
-          .toString()
-          .padStart(6, "0");
-
-        console.log(formattedInvoiceNumber);
+        const invoiceNumber = await generateInvoiceNumber(type);
 
         try {
           const newInvoice = await prisma.invoice.create({
             ...args,
             data: {
-              invoiceNumber: formattedInvoiceNumber,
+              invoiceNumber: invoiceNumber,
               ...args.data,
             },
           });
@@ -190,6 +197,8 @@ export const xprisma = prisma.$extends({
     },
     order: {
       create: async ({ model, operation, args, query }) => {
+        const { name, items, guestId, invoiceId } = args.data;
+
         const order = await prisma.order.create({
           ...args,
           data: {
@@ -197,16 +206,18 @@ export const xprisma = prisma.$extends({
             createdDate: dayjs(new Date()).startOf("day").toDate(),
           },
         });
+
         if (!order) {
           throw new Error("Error creating order");
         }
-        console.log(order.invoiceId);
-        if (order.invoiceId) {
-          console.log("updated the total");
-          await updateInvoiceTotal(order.invoiceId);
+        if (!order.invoiceId) {
+          throw new Error("No invoice to update");
         }
+        await updateInvoiceTotal(order?.invoiceId);
+
         return order;
       },
+
       update: async ({ model, operation, args, query }) => {
         const { data } = args;
         const { status } = data;
@@ -334,6 +345,34 @@ async function generateCancelledInvoiceNumber(): Promise<string> {
   console.info("Invoice cancelled - changing invoice number");
   console.log(newInvoiceNumber);
   return newInvoiceNumber.toString().padStart(6, "0");
+}
+
+async function generateInvoiceNumber(type: InvoiceType) {
+  const latestInvoice = await prisma.invoice.findFirst({
+    where: {
+      status: { not: "CANCELLED" },
+      type: type,
+    },
+    orderBy: { invoiceNumber: "desc" },
+    select: { invoiceNumber: true },
+  });
+
+  let invoiceNumber = 0;
+
+  if (latestInvoice) {
+    // Increment the latest invoice number by 1
+    invoiceNumber = parseInt(latestInvoice.invoiceNumber!, 10) + 1;
+  } else {
+    // Use the starting number if no invoice exists
+    if (type === "HOTEL") {
+      invoiceNumber = 1220;
+    } else if (type === "BAR") {
+      invoiceNumber = 500000;
+    }
+  }
+
+  const formattedInvoiceNumber = invoiceNumber.toString().padStart(6, "0");
+  return formattedInvoiceNumber;
 }
 
 if (env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
