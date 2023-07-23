@@ -437,7 +437,7 @@ function CancelInvoiceDialog({
       onSuccess: (data) => {
         const { invoiceNumber } = data;
 
-        void router.replace(`/invoices/${invoiceNumber}`);
+        void router.replace(`/invoices/${invoiceNumber!}`);
       },
       //   async onMutate({ id, status }) {
       // // Cancel outgoing fetche
