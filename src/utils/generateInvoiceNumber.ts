@@ -10,7 +10,7 @@ export async function generateInvoiceNumber() {
 
   if (latestInvoice) {
     // Increment the latest invoice number by 1
-    invoiceNumber = parseInt(latestInvoice.invoiceNumber, 10) + 1;
+    invoiceNumber = parseInt(latestInvoice.invoiceNumber!, 10) + 1;
   } else {
     // Use the starting number if no invoice exists
     invoiceNumber = 2000;
