@@ -95,7 +95,7 @@ export default function ItemForm({
     },
   });
 
-  const { mutate: updateItem } = api.pos.updateItem.useMutation({
+  const { mutate: updateItem, isLoading } = api.pos.updateItem.useMutation({
     onSuccess: (data) => {
       toast({
         description: "Item updated",

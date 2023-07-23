@@ -192,6 +192,7 @@ export const reservationsRouter = createTRPCRouter({
     )
     .mutation(async ({ input, ctx }) => {
       const { guestId } = input ?? "";
+
       const resItem = await ctx.prisma.reservationItem.findUnique({
         where: { id: input.resItemId },
       });
@@ -214,34 +215,11 @@ export const reservationsRouter = createTRPCRouter({
           where: { id: input.invoiceId },
         });
       } else {
-        // Create new invoice
-        // Find the latest invoice number from the database
-        console.info("creating invoice");
-
-        const latestInvoice = await ctx.prisma.invoice.findFirst({
-          orderBy: { invoiceNumber: "desc" },
-          select: { invoiceNumber: true },
-        });
-
-        let invoiceNumber: number;
-
-        if (latestInvoice) {
-          // Increment the latest invoice number by 1
-          invoiceNumber = parseInt(latestInvoice.invoiceNumber!, 10) + 1;
-        } else {
-          // Use the starting number if no invoice exists
-          invoiceNumber = 2000;
-        }
-
-        // Format the invoice number with leading zeros
-        const formattedInvoiceNumber = invoiceNumber
-          .toString()
-          .padStart(6, "0");
-
-        invoice = await ctx.prisma.invoice.create({
+        invoice = await ctx.xprisma.invoice.create({
           data: {
             totalUSD: input.subTotalUSD,
-            invoiceNumber: formattedInvoiceNumber,
+            type: "HOTEL",
+            invoiceNumber: "",
             customerName: input.firstName + " " + input.surname,
             customerEmail: input.email,
           },

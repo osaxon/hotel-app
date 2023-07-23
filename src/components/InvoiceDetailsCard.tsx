@@ -65,7 +65,7 @@ export function InvoiceDetailsCard({
 
         <div className="p-2">
           <p className="flex items-center gap-x-2 text-lg">
-            Invoice Number: <p className="text-lg">{invoice.invoiceNumber}</p>
+            Invoice Number: <p className="text-lg">{invoice.invoiceNumber!}</p>
           </p>
           <p className="flex items-center gap-x-2 text-lg">
             Date Created:{" "}
