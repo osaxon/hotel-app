@@ -82,56 +82,61 @@ export default function InvoiceSummary({
       </TableHeader>
       <TableBody>
         {reservations &&
-          reservations.map((reservation) => {
-            duration = getDurationOfStay(
-              reservation.checkIn,
-              reservation.checkOut
-            );
+          reservations
+            .filter((res) => res.status !== "CANCELLED")
+            .map((reservation) => {
+              duration = getDurationOfStay(
+                reservation.checkIn,
+                reservation.checkOut
+              );
 
-            formattedReservationTotal = formatCurrency({
-              amount: Number(reservation.subTotalUSD),
-            });
-
-            if (KHRConversionRate && KHRConversionRate?.rates?.KHR) {
-              KHRTotal = formatCurrency({
-                amount: Number(
-                  KHRConversionRate?.rates?.KHR *
-                    Number(reservation.subTotalUSD)
-                ),
-                currency: "KHR",
+              formattedReservationTotal = formatCurrency({
+                amount: Number(reservation.subTotalUSD),
               });
-            }
 
-            return (
-              <TableRow key={reservation.id}>
-                <TableCell className="flex flex-col gap-1">
-                  <Link
-                    className="underline"
-                    href={`/reservations/${reservation.id}`}
-                  >
-                    {reservation.reservationItem?.descForInvoice}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  {JSON.stringify(duration)}{" "}
-                  {duration <= 1 ? "night" : "nights"}
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency({
-                    amount: Number(reservation.subTotalUSD) / duration,
-                  })}
-                </TableCell>
-                <TableCell className="text-right">
-                  {formattedReservationTotal}
-                </TableCell>
-                <TableCell className="text-right">{KHRTotal}</TableCell>
-              </TableRow>
-            );
-          })}
+              if (KHRConversionRate && KHRConversionRate?.rates?.KHR) {
+                KHRTotal = formatCurrency({
+                  amount: Number(
+                    KHRConversionRate?.rates?.KHR *
+                      Number(reservation.subTotalUSD)
+                  ),
+                  currency: "KHR",
+                });
+              }
+
+              return (
+                <TableRow key={reservation.id}>
+                  <TableCell className="flex flex-col gap-1">
+                    <Link
+                      className="underline"
+                      href={`/reservations/${reservation.id}`}
+                    >
+                      {reservation.reservationItem?.descForInvoice}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    {JSON.stringify(duration)}{" "}
+                    {duration <= 1 ? "night" : "nights"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency({
+                      amount: Number(reservation.subTotalUSD) / duration,
+                    })}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formattedReservationTotal}
+                  </TableCell>
+                  <TableCell className="text-right">{KHRTotal}</TableCell>
+                </TableRow>
+              );
+            })}
 
         {orders &&
           orders
-            .filter((order) => order.isManualOrder === false)
+            .filter(
+              (order) =>
+                order.isManualOrder === false && order.status !== "CANCELLED"
+            )
             .map(
               (order, index) =>
                 order.items &&
@@ -190,7 +195,10 @@ export default function InvoiceSummary({
             )}
         {orders &&
           orders
-            .filter((order) => order.isManualOrder === true)
+            .filter(
+              (order) =>
+                order.isManualOrder === true && order.status !== "CANCELLED"
+            )
             .map((order) => {
               const formattedSubTotal = formatCurrency({
                 amount: Number(order.subTotalUSD),
