@@ -108,45 +108,6 @@ export const invoiceRouter = createTRPCRouter({
   create: privateProcedure
     .input(newInvoiceInputSchema)
     .mutation(async ({ ctx, input }) => {
-      //   let latestInvoice;
-
-      //   if (input.type === "HOTEL") {
-      //     // Find the latest invoice number from the database
-      //     latestInvoice = await ctx.prisma.invoice.findFirst({
-      //       where: { status: { not: "CANCELLED" }, type: "HOTEL" },
-      //       orderBy: { invoiceNumber: "desc" },
-      //       select: { invoiceNumber: true },
-      //     });
-      //   } else if (input.type === "BAR") {
-      //     latestInvoice = await ctx.prisma.invoice.findFirst({
-      //       where: {
-      //         status: { not: "CANCELLED" },
-      //         type: "BAR",
-      //       },
-      //       orderBy: { invoiceNumber: "desc" },
-      //       select: { invoiceNumber: true },
-      //     });
-      //   }
-
-      //   let invoiceNumber: number;
-      //   let formattedInvoiceNumber = "";
-
-      //   if (latestInvoice) {
-      //     // Increment the latest invoice number by 1
-      //     invoiceNumber = parseInt(latestInvoice.invoiceNumber, 10) + 1;
-      //   } else {
-      //     // Use the starting number if no invoice exists
-      //     if (input.type === "HOTEL") {
-      //       invoiceNumber = 1220;
-      //       // Format the invoice number with leading zeros
-      //       formattedInvoiceNumber = invoiceNumber.toString().padStart(6, "0");
-      //     } else if (input.type === "BAR") {
-      //       invoiceNumber = 5000;
-      //       // Format the invoice number with leading zeros
-      //       formattedInvoiceNumber = invoiceNumber.toString().padStart(6, "0");
-      //     }
-      //   }
-
       let guest: Guest | undefined = undefined;
 
       if (!input.guestId) {

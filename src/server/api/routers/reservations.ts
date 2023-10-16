@@ -529,8 +529,8 @@ export const reservationsRouter = createTRPCRouter({
   getActiveReservations: privateProcedure.query(async ({ ctx }) => {
     const reservations = await ctx.prisma.reservation.findMany({
       where: {
-        status: {
-          in: ["CHECKED_IN", "CONFIRMED"],
+        invoice: {
+          status: "UNPAID",
         },
       },
       include: {
