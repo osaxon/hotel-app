@@ -782,7 +782,7 @@ export const posRouter = createTRPCRouter({
     const invoices = await ctx.prisma.invoice.findMany({
       where: {
         status: {
-          equals: "UNPAID",
+          not: "CANCELLED",
         },
       },
       include: {
